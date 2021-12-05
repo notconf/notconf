@@ -71,8 +71,7 @@ RUN adduser --system netconf \
 COPY disable-nacm.xml /
 RUN sysrepocfg --edit=disable-nacm.xml -d startup --module ietf-netconf-acm -v4
 
-COPY run.sh /
-COPY load-yang-modules.sh /
+COPY *.sh /
 
 ENV EDITOR=vim
 ENV YANG_MODULES_DIR=/yang-modules
