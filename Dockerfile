@@ -22,9 +22,8 @@ RUN mkdir build && \
 WORKDIR /sysrepo
 RUN mkdir build && \
   cd build && \
-  cmake -D CMAKE_BUILD_TYPE:String="Release" -D ENABLE_TESTS=ON .. && \
+  cmake -D CMAKE_BUILD_TYPE:String="Release" .. && \
   make -j && \
-  make test && \
   make install
 
 RUN apt-get install -qy zlib1g-dev libssl-dev
