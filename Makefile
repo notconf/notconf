@@ -24,10 +24,10 @@ DOCKER_TAG?=$(PNS)
 
 build: export DOCKER_BUILDKIT=1
 build:
-# We explicitly build the first 'build-tools' stage (where the dependencies are
-# installed and source code is pulled), which allows us to control caching of
-# it through the DOCKER_BUILD_CACHE_ARG.
-	docker build --target build-tools $(DOCKER_BUILD_CACHE_ARG) .
+# We explicitly build the first 'build-tools-source' stage (where the
+# dependencies are installed and source code is pulled), which allows us to
+# control caching of it through the DOCKER_BUILD_CACHE_ARG.
+	docker build --target build-tools-source $(DOCKER_BUILD_CACHE_ARG) .
 	docker build --target notconf-release -t $(IMAGE_PATH)notconf:$(DOCKER_TAG) --build-arg BUILD_TYPE=Release .
 	docker build --target notconf-debug -t $(IMAGE_PATH)notconf:$(DOCKER_TAG)-debug --build-arg BUILD_TYPE=Debug .
 
