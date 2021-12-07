@@ -1,6 +1,6 @@
 ARG BUILD_TYPE
 
-FROM ubuntu:latest as builder
+FROM ubuntu:latest as build-tools
 ARG DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update \
@@ -16,6 +16,8 @@ RUN git clone -b devel https://github.com/sysrepo/sysrepo.git
 RUN git clone -b stable-0.9 http://git.libssh.org/projects/libssh.git
 RUN git clone -b devel https://github.com/CESNET/libnetconf2.git
 RUN git clone -b devel https://github.com/CESNET/netopeer2.git
+
+FROM build-tools AS builder
 
 ARG BUILD_TYPE
 
