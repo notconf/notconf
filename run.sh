@@ -2,4 +2,5 @@
 
 /install-yang-modules.sh
 /load-startup-config.sh
-exec netopeer2-server -d -v3
+mkdir -p /log
+exec netopeer2-server -d -v3 2>&1 | tee /log/netopeer.log
