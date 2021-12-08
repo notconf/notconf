@@ -1,0 +1,20 @@
+name: build-notconf-base
+
+on: [push, pull_request]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Build docker images
+      run: make build
+
+    - name: Install test prerequisites
+      run: pip3 install netconf-console2
+
+    - name: Run tests
+      run: make test

@@ -46,6 +46,6 @@ push:
 test:
 	-docker rm -f test-notconf-$(PNS)
 	docker run -d --name test-notconf-$(PNS) -v $$(pwd)/test/test.yang:/yang-modules/test.yang $(IMAGE_PATH)notconf:$(DOCKER_TAG)
-	netconf-console --host $$(docker inspect test-notconf-$(PNS) --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}') --port 830 --edit-config test/test.xml
-	netconf-console --host $$(docker inspect test-notconf-$(PNS) --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}') --port 830 --get-config -x /bob/bert | grep Robert
+	netconf-console2 --host $$(docker inspect test-notconf-$(PNS) --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}') --port 830 --edit-config test/test.xml
+	netconf-console2 --host $$(docker inspect test-notconf-$(PNS) --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}') --port 830 --get-config -x /bob/bert | grep Robert
 	docker rm -f test-notconf-$(PNS)
