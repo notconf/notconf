@@ -1,0 +1,21 @@
+name: build-notconf-base
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+      
+    - name: Build docker images
+      run: make build
+      
+    - name: Run tests
+      run: make test
