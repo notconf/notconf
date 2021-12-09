@@ -1,2 +1,4 @@
-src/
-container-logs/
+/src/
+/container-logs/
+/yang/
+/build/

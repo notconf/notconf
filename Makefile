@@ -30,7 +30,18 @@ endif
 
 IMAGE_TAG?=$(PNS)
 
-.PHONY: build test tag-release push-release push test
+# BuildKit speeds up the image builds by running independent stages in a
+# multi-stage Dockerfile concurrently. BuildKit is a breeze to use with Docker -
+# everything just works automagically when you set the env var. The process is a
+# bit more involved when using Podman so we are currently only using BuildKit on
+# Docker.
+export DOCKER_BUILDKIT=1
+# The standardized OCI image spec does not store the healthcheck in image
+# metadata, so there is no support for the HEALTHCHECK directive in the
+# Dockerfile. We can use the "docker" image spec with Podman.
+export BUILDAH_FORMAT=docker
+
+.PHONY: clone-deps build test tag-release push-release push test
 
 clone-or-update: BRANCH?=devel
 clone-or-update: DIR:=$(basename $(lastword $(subst /, ,$(REPOSITORY))))
@@ -59,16 +70,6 @@ clone-deps:
 	$(MAKE) clone-or-update REPOSITORY=https://github.com/CESNET/netopeer2.git BRANCH=$(NETOPEER2_TAG)
 
 CONTAINER_BUILD_ARGS=--build-arg SYSREPO_PYTHON_VERSION=$(SYSREPO_PYTHON_VERSION) --build-arg LIBYANG_PYTHON_VERSION=$(LIBYANG_PYTHON_VERSION)
-# BuildKit speeds up the image builds by running independent stages in a
-# multi-stage Dockerfile concurrently. BuildKit is a breeze to use with Docker -
-# everything just works automagically when you set the env var. The process is a
-# bit more involved when using Podman so we are currently only using BuildKit on
-# Docker.
-build: export DOCKER_BUILDKIT=1
-# The standardized OCI image spec does not store the healthcheck in image
-# metadata, so there is no support for the HEALTHCHECK directive in the
-# Dockerfile. We can use the "docker" image spec with Podman.
-build: export BUILDAH_FORMAT=docker
 build:
 # We explicitly build the first 'build-tools-source' stage (where the
 # dependencies are installed and source code is pulled), which allows us to
@@ -89,8 +90,16 @@ push:
 	$(CONTAINER_RUNTIME) push $(IMAGE_PATH)notconf:$(IMAGE_TAG)
 	$(CONTAINER_RUNTIME) push $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug
 
-test: export CNT_PREFIX=test-notconf-$(PNS)
 test:
+	$(MAKE) test-notconf-mount
+	$(MAKE) test-compose-yang
+
+# test-notconf-mount: start a notconf:latest container with the test YANG
+# modules mounted to /yang-modules in the container. All YANG modules and XML
+# init files in the directory are installed into sysrepo automatically at
+# container startup.
+test-notconf-mount: export CNT_PREFIX=test-notconf-mount-$(PNS)
+test-notconf-mount:
 	-$(CONTAINER_RUNTIME) rm -f $(CNT_PREFIX)
 # Usually we would start the notconf container with the desired YANG module
 # (located on host) mounted to /yang-modules (in container). When the test
@@ -200,3 +209,58 @@ else
 	echo -e "\e[0m"; \
 	exit 1
 endif
+
+.PHONY: clone-yangmodels compose-notconf-yang test-compose-yang test-composed-notconf-yang
+
+# clone-yangmodels: clones and checks out the yangmodels/yang repository
+# including submodules
+clone-yangmodels:
+	git clone --depth 1 --recurse-submodules=vendor --shallow-submodules git@github.com:yangmodels/yang.git
+
+# Set up COMPOSE_IMAGE_* variables by examining the provided YANG_PATH variable.
+# The conditions below knows how to extract the platform and version from the
+# yangmodules/yang paths. If none match, default to just using YANG_PATH.
+EXPLODED_YANG_PATH=$(subst /, ,$(YANG_PATH))
+ifneq (,$(findstring latest_sros, $(YANG_PATH)))
+	COMPOSE_IMAGE_NAME?=sros
+	COMPOSE_IMAGE_TAG?=$(subst latest_sros_,,$(filter latest_sros%,$(EXPLODED_YANG_PATH)))
+else ifneq (,$(findstring junos, $(YANG_PATH)))
+	WC=$(words $(EXPLODED_YANG_PATH))
+	COMPOSE_IMAGE_NAME?=$(lastword $(EXPLODED_YANG_PATH))
+	COMPOSE_IMAGE_TAG?=$(word $(shell echo $$(( $(WC) - 1 ))), $(EXPLODED_YANG_PATH))
+else
+	COMPOSE_IMAGE_NAME?=$(subst /,_,$(patsubst %/,%,$(YANG_PATH)))
+	COMPOSE_IMAGE_TAG?=latest
+endif
+
+# compose-notconf-yang: build a docker image with notconf:base with the given
+# YANG modules already installed. Provide the path to the modules (and init
+# XMLs) with the YANG_PATH variable.
+compose-notconf-yang: COMPOSE_PATH=build/$(COMPOSE_IMAGE_NAME)/$(COMPOSE_IMAGE_TAG)
+compose-notconf-yang:
+	@if [ -z "$(YANG_PATH)" ]; then echo "The YANG_PATH variable must be set"; exit 1; fi
+	rm -rf $(COMPOSE_PATH)
+	mkdir -p $(COMPOSE_PATH)
+	@set -e; \
+	for fixup in `find fixups -type f -name Makefile -printf "%d %P\n" | sort -n -r | awk '{ print $$2; }'`; do \
+		if [[ "$(YANG_PATH)" =~ ^$$(dirname $${fixup}).* ]]; then \
+			echo "Executing fixups/$${fixup}"; \
+			make -f fixups/$$fixup -j YANG_PATH=$(YANG_PATH) COMPOSE_PATH=$(COMPOSE_PATH); \
+		fi \
+	done
+	@ls $(COMPOSE_PATH)/*.yang > /dev/null 2>&1 || echo "Copying files directly from $(YANG_PATH) without fixups"; find $(YANG_PATH) -maxdepth 1 -type f -exec cp -t $(COMPOSE_PATH) {} +
+	$(CONTAINER_RUNTIME) build -f Dockerfile.yang -t $(IMAGE_PATH)notconf-$(COMPOSE_IMAGE_NAME):$(COMPOSE_IMAGE_TAG) --build-arg COMPOSE_PATH=$(COMPOSE_PATH) $(DOCKER_BUILD_CACHE_ARG) .
+
+test-compose-yang: export YANG_PATH=test
+test-compose-yang: compose-notconf-yang
+	$(MAKE) test-composed-notconf-yang
+
+test-composed-notconf-yang: export CNT_PREFIX=test-yang-$(COMPOSE_IMAGE_NAME)-$(COMPOSE_IMAGE_TAG)-$(PNS)
+test-composed-notconf-yang:
+	-$(CONTAINER_RUNTIME) rm -f $(CNT_PREFIX)
+	$(CONTAINER_RUNTIME) run -d --log-driver json-file --name $(CNT_PREFIX) $(IMAGE_PATH)notconf-$(COMPOSE_IMAGE_NAME):$(COMPOSE_IMAGE_TAG)
+	$(MAKE) wait-healthy
+	$(CONTAINER_RUNTIME) run -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug netconf-console2 --port 830 --hello
+	$(CONTAINER_RUNTIME) run -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug netconf-console2 --port 830 --get -x /modules-state
+	$(MAKE) save-logs
+	$(MAKE) test-stop
