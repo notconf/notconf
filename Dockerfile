@@ -69,6 +69,8 @@ RUN mkdir build && \
   make install
 
 FROM ubuntu:latest as notconf-release
+LABEL org.opencontainers.image.source="https://github.com/mzagozen/notconf"
+LABEL org.opencontainers.image.description="This is the release build of notconf. Start the container with the device YANG modules mounted to /yang-modules to simulate the NETCONF management interface."
 ARG DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update \
@@ -99,6 +101,8 @@ ENTRYPOINT /run.sh
 HEALTHCHECK CMD grep -e 'Listening on .* for SSH connections' /log/netopeer.log
 
 FROM builder as notconf-debug
+LABEL org.opencontainers.image.source="https://github.com/mzagozen/notconf"
+LABEL org.opencontainers.image.description="This is the debug build of notconf - the server (netopeer2) and its dependencies (sysrepo, libnetconf2, libyang) are built with the debug flag set. The image also includes a compiler (clang) and debugging tools (gdb and valgrind). Start the container with the device YANG modules mounted to /yang-modules to simulate the NETCONF management interface."
 
 RUN adduser --system netconf \
  && adduser --system admin \
