@@ -98,7 +98,7 @@ ENV YANG_MODULES_DIR=/yang-modules
 EXPOSE 830
 
 ENTRYPOINT /run.sh
-HEALTHCHECK CMD grep -e 'Listening on .* for SSH connections' /log/netopeer.log
+HEALTHCHECK --start-period=30s --interval=5s CMD grep -e 'Listening on .* for SSH connections' /log/netopeer.log
 
 FROM builder as notconf-debug
 LABEL org.opencontainers.image.source="https://github.com/mzagozen/notconf"
@@ -119,4 +119,4 @@ ENV YANG_MODULES_DIR=/yang-modules
 EXPOSE 830
 
 ENTRYPOINT /run.sh
-HEALTHCHECK CMD grep -e 'Listening on .* for SSH connections' /log/netopeer.log
+HEALTHCHECK --start-period=30s --interval=5s CMD grep -e 'Listening on .* for SSH connections' /log/netopeer.log

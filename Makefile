@@ -43,9 +43,37 @@ push:
 	docker push $(IMAGE_PATH)notconf:$(DOCKER_TAG)
 	docker push $(IMAGE_PATH)notconf:$(DOCKER_TAG)-debug
 
+test: CNT_PREFIX=test-notconf
 test:
-	-docker rm -f test-notconf-$(PNS)
-	docker run -d --name test-notconf-$(PNS) -v $$(pwd)/test/test.yang:/yang-modules/test.yang $(IMAGE_PATH)notconf:$(DOCKER_TAG)
-	netconf-console2 --host $$(docker inspect test-notconf-$(PNS) --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}') --port 830 --edit-config test/test.xml
-	netconf-console2 --host $$(docker inspect test-notconf-$(PNS) --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}') --port 830 --get-config -x /bob/bert | grep Robert
-	docker rm -f test-notconf-$(PNS)
+	-docker rm -f $(CNT_PREFIX)-$(PNS)
+	docker run -d --name $(CNT_PREFIX)-$(PNS) -v $$(pwd)/test/test.yang:/yang-modules/test.yang $(IMAGE_PATH)notconf:$(DOCKER_TAG)
+	$(MAKE) wait-healthy
+	netconf-console2 --host $$(docker inspect $(CNT_PREFIX)-$(PNS) --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}') --port 830 --edit-config test/test.xml
+	netconf-console2 --host $$(docker inspect $(CNT_PREFIX)-$(PNS) --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}') --port 830 --get-config -x /bob/bert | grep Robert
+	docker rm -f $(CNT_PREFIX)-$(PNS)
+
+SHELL=/bin/bash
+
+wait-healthy:
+	@echo "Waiting (up to 900 seconds) for containers with prefix $(CNT_PREFIX) to become healthy"
+	@OLD_COUNT=0; for I in $$(seq 1 900); do \
+		COUNT=$$(docker ps -f name=$(CNT_PREFIX) | egrep "(unhealthy|health: starting)" | wc -l); \
+		if [ $$COUNT -gt 0 ]; then  \
+			if [ $$OLD_COUNT -ne $$COUNT ];\
+			then \
+				echo -e "\e[31m===  $${SECONDS}s elapsed - Found unhealthy/starting ($${COUNT}) containers";\
+				docker ps -f name=$(CNT_PREFIX) | egrep "(unhealthy|health: starting)" | awk '{ print $$(NF) }';\
+				echo -e "Checking again every 1 second, no more messages until changes detected\\e[0m"; \
+			fi;\
+			sleep 1; \
+			OLD_COUNT=$$COUNT;\
+			continue; \
+		else \
+			echo -e "\e[32m=== $${SECONDS}s elapsed - Did not find any unhealthy containers, all is good.\e[0m"; \
+			exit 0; \
+		fi ;\
+	done; \
+	echo -e "\e[31m===  $${SECONDS}s elapsed - Found unhealthy/starting ($${COUNT}) containers";\
+	docker ps -f name=$(CNT_PREFIX) | egrep "(unhealthy|health: starting)" | awk '{ print $$(NF) }';\
+	echo -e "\e[0m"; \
+	exit 1
