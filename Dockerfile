@@ -1,32 +1,16 @@
-ARG BUILD_TYPE
-
-FROM ubuntu:latest AS git
+FROM ubuntu:latest AS build-tools-source
 ARG DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update \
- && apt-get install -qy git
-
-FROM git AS git-clone
-WORKDIR /src
-RUN git clone -b devel https://github.com/CESNET/libyang.git
-RUN git clone -b devel https://github.com/sysrepo/sysrepo.git
-RUN git clone -b stable-0.9 http://git.libssh.org/projects/libssh.git
-RUN git clone -b devel https://github.com/CESNET/libnetconf2.git
-RUN git clone -b devel https://github.com/CESNET/netopeer2.git
-
-FROM git AS build-tools
-ARG DEBIAN_FRONTEND=noninteractive
-
-RUN apt-get install -qy ca-certificates cmake libpcre2-dev clang \
+ && apt-get install -qy ca-certificates cmake libpcre2-dev clang \
  # required for testing sysrepo
  && apt-get install -qy libcmocka-dev valgrind \
  # libssh dependencies
  && apt-get install -qy zlib1g-dev libssl-dev \
  # common sense tools for debugging
- && apt-get install -qy less vim
+ && apt-get install -qy less neovim git
 
-FROM build-tools AS build-tools-source
-COPY --from=git-clone /src /src
+COPY /src /src
 
 FROM build-tools-source AS builder
 ARG BUILD_TYPE

@@ -10,6 +10,15 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - name: Cache deps
+      uses: actions/cache@v2
+      with:
+        path: src
+        key: src-${{ hashFiles('Makefile') }}
+
+    - name: Update deps
+      run: make clone-deps
+
     - name: Build docker images
       run: make build
 
