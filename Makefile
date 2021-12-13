@@ -12,7 +12,7 @@ endif
 # makes it possible to still use the cache if explicitly set through
 # environment variables in CI.
 ifneq ($(CI),)
-ifeq ($(CI_COMMIT_REF_NAME),$(CI_DEFAULT_BRANCH))
+ifeq ($(CI_COMMIT_REF_NAME),main)
 DOCKER_BUILD_CACHE_ARG?=--no-cache
 endif
 endif

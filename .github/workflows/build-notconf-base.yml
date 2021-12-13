@@ -6,6 +6,8 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
+    env:
+      CI_COMMIT_REF_NAME: ${{ github.ref_name }}
 
     steps:
     - uses: actions/checkout@v2
