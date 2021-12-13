@@ -22,6 +22,22 @@ DOCKER_TAG?=$(PNS)
 
 .PHONY: build test tag-release push-release push test
 
+clone-or-update: BRANCH?=devel
+clone-or-update: DIR:=$(basename $(lastword $(subst /, ,$(REPOSITORY))))
+clone-or-update:
+	@mkdir -p src
+	if ! git clone -b $(BRANCH) $(REPOSITORY) src/$(DIR); then \
+		cd src/$(DIR); \
+		git pull; \
+	fi
+
+clone-deps:
+	$(MAKE) clone-or-update REPOSITORY=https://github.com/CESNET/libyang.git
+	$(MAKE) clone-or-update REPOSITORY=https://github.com/sysrepo/sysrepo.git
+	$(MAKE) clone-or-update REPOSITORY=http://git.libssh.org/projects/libssh.git BRANCH=stable-0.9
+	$(MAKE) clone-or-update REPOSITORY=https://github.com/CESNET/libnetconf2.git
+	$(MAKE) clone-or-update REPOSITORY=https://github.com/CESNET/netopeer2.git
+
 build: export DOCKER_BUILDKIT=1
 build:
 # We explicitly build the first 'build-tools-source' stage (where the
