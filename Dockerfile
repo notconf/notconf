@@ -8,7 +8,7 @@ RUN apt-get update \
  # libssh dependencies
  && apt-get install -qy zlib1g-dev libssl-dev \
  # common sense tools for debugging
- && apt-get install -qy less vim git
+ && apt-get install -qy less neovim git
 
 COPY /src /src
 
