@@ -268,7 +268,9 @@ compose-notconf-yang:
 		echo "Copying files directly from $(YANG_PATH) without fixups"; \
 		find $(YANG_PATH) -maxdepth 1 -type f -exec cp -t $(COMPOSE_PATH) {} +; \
 	fi
-	$(CONTAINER_RUNTIME) build -f Dockerfile.yang -t $(IMAGE_PATH)notconf-$(COMPOSE_IMAGE_NAME):$(COMPOSE_IMAGE_TAG)-$(PNS) --build-arg COMPOSE_PATH=$(COMPOSE_PATH) --build-arg IMAGE_PATH=$(IMAGE_PATH) --build-arg IMAGE_TAG=$(IMAGE_TAG) $(DOCKER_BUILD_CACHE_ARG) .
+	$(CONTAINER_RUNTIME) build -f Dockerfile.yang -t $(IMAGE_PATH)notconf-$(COMPOSE_IMAGE_NAME):$(COMPOSE_IMAGE_TAG)-$(PNS) \
+		--build-arg COMPOSE_PATH=$(COMPOSE_PATH) --build-arg IMAGE_PATH=$(IMAGE_PATH) --build-arg IMAGE_TAG=$(IMAGE_TAG) $(DOCKER_BUILD_CACHE_ARG) \
+		--label org.opencontainers.image.description="This image contains the base notconf installation (sysrepo+netopeer2) with the following YANG modules pre-installed: $(COMPOSE_IMAGE_NAME)/$(COMPOSE_IMAGE_TAG)" .
 	echo $(IMAGE_PATH)notconf-$(COMPOSE_IMAGE_NAME):$(COMPOSE_IMAGE_TAG)-$(PNS) >> composed-notconf.txt
 
 test-compose-yang: export YANG_PATH=$(YANG_PATH)
