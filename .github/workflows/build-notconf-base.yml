@@ -2,6 +2,9 @@ name: build-notconf-base
 
 on: [push, pull_request]
 
+env:
+  IMAGE_PATH: ghcr.io/mzagozen/notconf/
+
 jobs:
   build:
 
@@ -27,3 +30,17 @@ jobs:
 
     - name: Run tests
       run: make test
+
+    - name: Log in to the Container registry
+      uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
+      if: ${{ github.ref_name == 'main' }}
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Tag and push docker images
+      if: ${{ github.ref_name == 'main' }}
+      run: |
+        make tag-release
+        make push-release

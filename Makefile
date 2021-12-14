@@ -52,8 +52,8 @@ tag-release:
 	docker tag $(IMAGE_PATH)notconf:$(DOCKER_TAG)-debug $(IMAGE_PATH)notconf:debug
 
 push-release:
-	docker push $(IMAGE_PATH)notconf:latest
 	docker push $(IMAGE_PATH)notconf:debug
+	docker push $(IMAGE_PATH)notconf:latest
 
 push:
 	docker push $(IMAGE_PATH)notconf:$(DOCKER_TAG)
