@@ -61,6 +61,8 @@ before_script:
     - if [ "${DOCKER_PUSH}" != "false" ]; then make push; fi
     - if [ "${CI_COMMIT_REF_NAME}" = "${CI_DEFAULT_BRANCH}" ]; then make tag-release; fi
     - if [ "${CI_COMMIT_REF_NAME}" = "${CI_DEFAULT_BRANCH}" ] && [ "${DOCKER_PUSH}" != "false" ]; then make push-release; fi
+    - if [ "${CI_COMMIT_REF_NAME}" = "${CI_DEFAULT_BRANCH}" ]; then make tag-release-composed-notconf; fi
+    - if [ "${CI_COMMIT_REF_NAME}" = "${CI_DEFAULT_BRANCH}" ] && [ "${DOCKER_PUSH}" != "false" ]; then make push-release-composed-notconf; fi
     - mark_section_end image-push
   after_script:
     - *helper_mark_section

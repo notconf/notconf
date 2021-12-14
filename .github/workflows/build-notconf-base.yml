@@ -71,6 +71,8 @@ jobs:
       run: |
         make tag-release
         make push-release
+        make tag-release-composed-notconf
+        make push-release-composed-notconf
 
     - name: Store container logs in artifact
       uses: actions/upload-artifact@v3

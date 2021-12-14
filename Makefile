@@ -41,7 +41,7 @@ export DOCKER_BUILDKIT=1
 # Dockerfile. We can use the "docker" image spec with Podman.
 export BUILDAH_FORMAT=docker
 
-.PHONY: clone-deps build test tag-release push-release push test
+.PHONY: clone-deps build test tag-release push-release push test tag-release-composed-notconf push-release-composed-notconf
 
 clone-or-update: BRANCH?=devel
 clone-or-update: DIR:=$(basename $(lastword $(subst /, ,$(REPOSITORY))))
@@ -90,9 +90,16 @@ push:
 	$(CONTAINER_RUNTIME) push $(IMAGE_PATH)notconf:$(IMAGE_TAG)
 	$(CONTAINER_RUNTIME) push $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug
 
+tag-release-composed-notconf: composed-notconf.txt
+	for tag in $$(uniq $<); do release_tag=$$(echo $${tag} | sed 's/-$(PNS)$$//'); $(CONTAINER_RUNTIME) tag $${tag} $${release_tag}; done
+
+push-release-composed-notconf: composed-notconf.txt
+	for release_tag in $$(sed 's/-$(PNS)$$//g' $< | uniq); do $(CONTAINER_RUNTIME) push $${release_tag}; done
+
 test:
 	$(MAKE) test-notconf-mount
 	$(MAKE) clone-yangmodels
+	> composed-notconf.txt
 	$(MAKE) test-compose-yang YANG_PATH=test
 	$(MAKE) test-compose-yang YANG_PATH=yang/vendor/nokia/7x50_YangModels/latest_sros_21.20
 	$(MAKE) test-compose-yang YANG_PATH=yang/vendor/nokia/7x50_YangModels/latest_sros_22.2
@@ -261,7 +268,8 @@ compose-notconf-yang:
 		echo "Copying files directly from $(YANG_PATH) without fixups"; \
 		find $(YANG_PATH) -maxdepth 1 -type f -exec cp -t $(COMPOSE_PATH) {} +; \
 	fi
-	$(CONTAINER_RUNTIME) build -f Dockerfile.yang -t $(IMAGE_PATH)notconf-$(COMPOSE_IMAGE_NAME):$(COMPOSE_IMAGE_TAG) --build-arg COMPOSE_PATH=$(COMPOSE_PATH) --build-arg IMAGE_TAG=$(IMAGE_TAG) $(DOCKER_BUILD_CACHE_ARG) .
+	$(CONTAINER_RUNTIME) build -f Dockerfile.yang -t $(IMAGE_PATH)notconf-$(COMPOSE_IMAGE_NAME):$(COMPOSE_IMAGE_TAG)-$(PNS) --build-arg COMPOSE_PATH=$(COMPOSE_PATH) --build-arg IMAGE_PATH=$(IMAGE_PATH) --build-arg IMAGE_TAG=$(IMAGE_TAG) $(DOCKER_BUILD_CACHE_ARG) .
+	echo $(IMAGE_PATH)notconf-$(COMPOSE_IMAGE_NAME):$(COMPOSE_IMAGE_TAG)-$(PNS) >> composed-notconf.txt
 
 test-compose-yang: export YANG_PATH=$(YANG_PATH)
 test-compose-yang: compose-notconf-yang
@@ -270,7 +278,7 @@ test-compose-yang: compose-notconf-yang
 test-composed-notconf-yang: export CNT_PREFIX=test-yang-$(COMPOSE_IMAGE_NAME)-$(COMPOSE_IMAGE_TAG)-$(PNS)
 test-composed-notconf-yang:
 	-$(CONTAINER_RUNTIME) rm -f $(CNT_PREFIX)
-	$(CONTAINER_RUNTIME) run -d --log-driver json-file --name $(CNT_PREFIX) $(IMAGE_PATH)notconf-$(COMPOSE_IMAGE_NAME):$(COMPOSE_IMAGE_TAG)
+	$(CONTAINER_RUNTIME) run -d --log-driver json-file --name $(CNT_PREFIX) $(IMAGE_PATH)notconf-$(COMPOSE_IMAGE_NAME):$(COMPOSE_IMAGE_TAG)-$(PNS)
 	$(MAKE) wait-healthy
 	$(CONTAINER_RUNTIME) run -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug netconf-console2 --port 830 --hello
 	$(CONTAINER_RUNTIME) run -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug netconf-console2 --port 830 --get -x /modules-state
