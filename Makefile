@@ -63,27 +63,36 @@ push:
 	docker push $(IMAGE_PATH)notconf:$(DOCKER_TAG)
 	docker push $(IMAGE_PATH)notconf:$(DOCKER_TAG)-debug
 
-test: CNT_PREFIX=test-notconf
+test: export CNT_PREFIX=test-notconf-$(PNS)
 test:
-	-docker rm -f $(CNT_PREFIX)-$(PNS)
+	-docker rm -f $(CNT_PREFIX)
 # Usually we would start the notconf container with the desired YANG module
 # (located on host) mounted to /yang-modules (in container). When the test
 # itself is executed in a (CI runner) container bind mounting a path won't work
 # because the path does not exist on the host, only in the test container. As a
 # workaround we first create the container and then copy the YANG module to the
 # target location.
-#	docker run -d --name $(CNT_PREFIX)-$(PNS) -v $$(pwd)/test/test.yang:/yang-modules/test.yang $(IMAGE_PATH)notconf:$(DOCKER_TAG)
-	docker create --name $(CNT_PREFIX)-$(PNS) $(IMAGE_PATH)notconf:$(DOCKER_TAG)
-	docker cp test/test.yang $(CNT_PREFIX)-$(PNS):/yang-modules/
-	docker start $(CNT_PREFIX)-$(PNS)
+#	docker run -d --name $(CNT_PREFIX) -v $$(pwd)/test/test.yang:/yang-modules/test.yang $(IMAGE_PATH)notconf:$(DOCKER_TAG)
+	docker create --name $(CNT_PREFIX) $(IMAGE_PATH)notconf:$(DOCKER_TAG)
+	docker cp test/test.yang $(CNT_PREFIX):/yang-modules/
+	docker start $(CNT_PREFIX)
 	$(MAKE) wait-healthy
-	netconf-console2 --host $$(docker inspect $(CNT_PREFIX)-$(PNS) --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}') --port 830 --edit-config test/test.xml
-	netconf-console2 --host $$(docker inspect $(CNT_PREFIX)-$(PNS) --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}') --port 830 --get-config -x /bob/bert | grep Robert
-	docker rm -f $(CNT_PREFIX)-$(PNS)
+	netconf-console2 --host $$(docker inspect $(CNT_PREFIX) --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}') --port 830 --edit-config test/test.xml
+	netconf-console2 --host $$(docker inspect $(CNT_PREFIX) --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}') --port 830 --get-config -x /bob/bert | grep Robert
+	$(MAKE) save-logs
+	$(MAKE) test-stop
 
-test-stop: CNT_PREFIX=test-notconf
+test-stop: CNT_PREFIX?=test-notconf
 test-stop:
-	docker ps -aqf name=$(CNT_PREFIX)-$(PNS) | xargs --no-run-if-empty docker rm -f
+	docker ps -aqf name=$(CNT_PREFIX) | xargs --no-run-if-empty docker rm -f
+
+save-logs: CNT_PREFIX?=test-notconf
+save-logs:
+	mkdir -p docker-logs
+	@for c in $$(docker ps -af name=$(CNT_PREFIX) --format '{{.Names}}'); do \
+		echo "== Collecting logs from $${c}"; \
+		docker logs $${c} > docker-logs/$${c} 2>&1; \
+	done
 
 SHELL=/bin/bash
 

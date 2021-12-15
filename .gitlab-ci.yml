@@ -66,8 +66,13 @@ before_script:
   after_script:
     - *helper_mark_section
     - mark_section_start test-stop "Stopping residual test containers"
+    - make save-logs
     - make test-stop
     - mark_section_end test-stop
+  artifacts:
+    when: always
+    paths:
+      - "**/docker-logs/"
 
 build:
   extends: .build
