@@ -81,6 +81,10 @@ test:
 	netconf-console2 --host $$(docker inspect $(CNT_PREFIX)-$(PNS) --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}') --port 830 --get-config -x /bob/bert | grep Robert
 	docker rm -f $(CNT_PREFIX)-$(PNS)
 
+test-stop: CNT_PREFIX=test-notconf
+test-stop:
+	docker ps -aqf name=$(CNT_PREFIX)-$(PNS) | xargs --no-run-if-empty docker rm -f
+
 SHELL=/bin/bash
 
 wait-healthy:
