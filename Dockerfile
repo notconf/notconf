@@ -76,6 +76,7 @@ COPY disable-nacm.xml /
 RUN sysrepocfg --edit=disable-nacm.xml -d startup --module ietf-netconf-acm -v4
 
 COPY *.sh /
+RUN mkdir /yang-modules
 
 ENV YANG_MODULES_DIR=/yang-modules
 EXPOSE 830
@@ -96,6 +97,7 @@ COPY disable-nacm.xml /
 RUN sysrepocfg --edit=disable-nacm.xml -d startup --module ietf-netconf-acm -v4
 
 COPY *.sh /
+RUN mkdir /yang-modules
 
 ENV EDITOR=vim
 ENV YANG_MODULES_DIR=/yang-modules

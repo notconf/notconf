@@ -66,7 +66,16 @@ push:
 test: CNT_PREFIX=test-notconf
 test:
 	-docker rm -f $(CNT_PREFIX)-$(PNS)
-	docker run -d --name $(CNT_PREFIX)-$(PNS) -v $$(pwd)/test/test.yang:/yang-modules/test.yang $(IMAGE_PATH)notconf:$(DOCKER_TAG)
+# Usually we would start the notconf container with the desired YANG module
+# (located on host) mounted to /yang-modules (in container). When the test
+# itself is executed in a (CI runner) container bind mounting a path won't work
+# because the path does not exist on the host, only in the test container. As a
+# workaround we first create the container and then copy the YANG module to the
+# target location.
+#	docker run -d --name $(CNT_PREFIX)-$(PNS) -v $$(pwd)/test/test.yang:/yang-modules/test.yang $(IMAGE_PATH)notconf:$(DOCKER_TAG)
+	docker create --name $(CNT_PREFIX)-$(PNS) $(IMAGE_PATH)notconf:$(DOCKER_TAG)
+	docker cp test/test.yang $(CNT_PREFIX)-$(PNS):/yang-modules/
+	docker start $(CNT_PREFIX)-$(PNS)
 	$(MAKE) wait-healthy
 	netconf-console2 --host $$(docker inspect $(CNT_PREFIX)-$(PNS) --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}') --port 830 --edit-config test/test.xml
 	netconf-console2 --host $$(docker inspect $(CNT_PREFIX)-$(PNS) --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}') --port 830 --get-config -x /bob/bert | grep Robert
