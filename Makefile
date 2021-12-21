@@ -104,6 +104,7 @@ test:
 	$(MAKE) test-compose-yang YANG_PATH=yang/vendor/nokia/7x50_YangModels/latest_sros_21.20
 	$(MAKE) test-compose-yang YANG_PATH=yang/vendor/nokia/7x50_YangModels/latest_sros_22.2
 	$(MAKE) test-compose-yang YANG_PATH=yang/vendor/juniper/21.1/21.1R1/junos
+	#$(MAKE) test-compose-yang YANG_PATH=yang/vendor/cisco/xr/771
 
 # test-notconf-mount: start a notconf:latest container with the test YANG
 # modules mounted to /yang-modules in the container. All YANG modules and XML
@@ -237,13 +238,20 @@ clone-yangmodels:
 # The conditions below knows how to extract the platform and version from the
 # yangmodules/yang paths. If none match, default to just using YANG_PATH.
 EXPLODED_YANG_PATH=$(subst /, ,$(YANG_PATH))
-ifneq (,$(findstring latest_sros, $(YANG_PATH)))
+ifneq (,$(findstring latest_sros,$(YANG_PATH)))
 	COMPOSE_IMAGE_NAME?=sros
 	COMPOSE_IMAGE_TAG?=$(subst latest_sros_,,$(filter latest_sros%,$(EXPLODED_YANG_PATH)))
-else ifneq (,$(findstring junos, $(YANG_PATH)))
-	WC=$(words $(EXPLODED_YANG_PATH))
+else ifneq (,$(findstring junos,$(YANG_PATH)))
+# .../vendor/juniper/20.1/20.1R1/junos
+# last word is the os - junos
 	COMPOSE_IMAGE_NAME?=$(lastword $(EXPLODED_YANG_PATH))
-	COMPOSE_IMAGE_TAG?=$(word $(shell echo $$(( $(WC) - 1 ))), $(EXPLODED_YANG_PATH))
+# second to last word is the version - 21.1R1
+	COMPOSE_IMAGE_TAG?=$(lastword $(filter-out $(lastword $(EXPLODED_YANG_PATH)),$(EXPLODED_YANG_PATH)))
+else ifneq (,$(findstring cisco,$(YANG_PATH)))
+# .../vendor/cisco/xr/751
+# 3rd and 2nd words from the right are the os - cisco-xr
+	COMPOSE_IMAGE_NAME?=cisco-$(lastword $(filter-out $(lastword $(EXPLODED_YANG_PATH)),$(EXPLODED_YANG_PATH)))
+	COMPOSE_IMAGE_TAG?=$(lastword $(EXPLODED_YANG_PATH))
 else
 	COMPOSE_IMAGE_NAME?=$(subst /,_,$(patsubst %/,%,$(YANG_PATH)))
 	COMPOSE_IMAGE_TAG?=latest
