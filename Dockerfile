@@ -7,6 +7,8 @@ RUN apt-get update \
  && apt-get install -qy libcmocka-dev valgrind \
  # libssh dependencies
  && apt-get install -qy zlib1g-dev libssl-dev \
+ # libnetconf2 now supports PAM
+ && apt-get install -qy libpam0g-dev \
  # common sense tools for debugging
  && apt-get install -qy less neovim git
 
