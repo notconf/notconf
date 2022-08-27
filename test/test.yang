@@ -4,6 +4,9 @@ module test {
   prefix test;
 
   container bob {
+    leaf startup {
+      type string;
+    }
     leaf bert {
       type string;
     }

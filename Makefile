@@ -72,12 +72,14 @@ test:
 # because the path does not exist on the host, only in the test container. As a
 # workaround we first create the container and then copy the YANG module to the
 # target location.
-#	docker run -d --name $(CNT_PREFIX) -v $$(pwd)/test/test.yang:/yang-modules/test.yang $(IMAGE_PATH)notconf:$(DOCKER_TAG)
+#	docker run -d --name $(CNT_PREFIX) -v $$(pwd)/test:/yang-modules $(IMAGE_PATH)notconf:$(DOCKER_TAG)
 	docker create --name $(CNT_PREFIX) $(IMAGE_PATH)notconf:$(DOCKER_TAG)
 	docker cp test/test.yang $(CNT_PREFIX):/yang-modules/
+	docker cp test/test.xml $(CNT_PREFIX):/yang-modules/
 	docker start $(CNT_PREFIX)
 	$(MAKE) wait-healthy
-	netconf-console2 --host $$(docker inspect $(CNT_PREFIX) --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}') --port 830 --edit-config test/test.xml
+	netconf-console2 --host $$(docker inspect $(CNT_PREFIX) --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}') --port 830 --get-config -x /bob/startup | grep Robert
+	netconf-console2 --host $$(docker inspect $(CNT_PREFIX) --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}') --port 830 --ns test=urn:notconf:test --set /test:bob/test:bert=Robert
 	netconf-console2 --host $$(docker inspect $(CNT_PREFIX) --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}') --port 830 --get-config -x /bob/bert | grep Robert
 	$(MAKE) save-logs
 	$(MAKE) test-stop

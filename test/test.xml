@@ -1,3 +1,6 @@
+<!-- This is the startup config for the test.yang module. It will be
+automatically inserted into the sysrepo startup datastore by the startup script
+-->
 <bob xmlns="urn:notconf:test">
-	<bert>Robert!</bert>
+	<startup>Robert!</startup>
 </bob>
