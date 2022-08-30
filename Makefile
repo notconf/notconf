@@ -32,15 +32,21 @@ clone-or-update:
 	@mkdir -p src
 	if ! git clone -b $(BRANCH) $(REPOSITORY) src/$(DIR); then \
 		cd src/$(DIR); \
-		git pull; \
+		git fetch origin; \
+		git checkout $(BRANCH); \
 	fi
 
+LIBYANG_TAG=v2.0.231
+SYSREPO_TAG=v2.1.84
+LIBSSH_TAG=libssh-0.9.6
+LIBNETCONF2_TAG=v2.1.18
+NETOPEER2_TAG=v2.1.36
 clone-deps:
-	$(MAKE) clone-or-update REPOSITORY=https://github.com/CESNET/libyang.git
-	$(MAKE) clone-or-update REPOSITORY=https://github.com/sysrepo/sysrepo.git
-	$(MAKE) clone-or-update REPOSITORY=http://git.libssh.org/projects/libssh.git BRANCH=stable-0.9
-	$(MAKE) clone-or-update REPOSITORY=https://github.com/CESNET/libnetconf2.git
-	$(MAKE) clone-or-update REPOSITORY=https://github.com/CESNET/netopeer2.git
+	$(MAKE) clone-or-update REPOSITORY=https://github.com/CESNET/libyang.git BRANCH=$(LIBYANG_TAG)
+	$(MAKE) clone-or-update REPOSITORY=https://github.com/sysrepo/sysrepo.git BRANCH=$(SYSREPO_TAG)
+	$(MAKE) clone-or-update REPOSITORY=http://git.libssh.org/projects/libssh.git BRANCH=$(LIBSSH_TAG)
+	$(MAKE) clone-or-update REPOSITORY=https://github.com/CESNET/libnetconf2.git BRANCH=$(LIBNETCONF2_TAG)
+	$(MAKE) clone-or-update REPOSITORY=https://github.com/CESNET/netopeer2.git BRANCH=$(NETOPEER2_TAG)
 
 build: export DOCKER_BUILDKIT=1
 build:
