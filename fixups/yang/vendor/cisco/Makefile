@@ -8,4 +8,4 @@ EXCLUDE+=%Cisco-IOS-XR-infra-policymgr-cfg.yang
 all: $(patsubst $(YANG_PATH)/%.yang,$(COMPOSE_PATH)/%.yang,$(filter-out $(EXCLUDE),$(YANGS)))
 
 $(COMPOSE_PATH)/%.yang: $(YANG_PATH)/%.yang
-	cp $< $@
+	sed -e '/^\s\+input;/d' -e '/^\s\+output;/d' $< > $@
