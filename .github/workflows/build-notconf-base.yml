@@ -25,9 +25,6 @@ jobs:
     - name: Build docker images
       run: make build
 
-    - name: Install test prerequisites
-      run: pip3 install netconf-console2
-
     - name: Run tests
       run: make test
 

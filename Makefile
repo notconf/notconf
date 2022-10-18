@@ -84,9 +84,9 @@ test:
 	docker cp test/test.xml $(CNT_PREFIX):/yang-modules/
 	docker start $(CNT_PREFIX)
 	$(MAKE) wait-healthy
-	netconf-console2 --host $$(docker inspect $(CNT_PREFIX) --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}') --port 830 --get-config -x /bob/startup | grep Robert
-	netconf-console2 --host $$(docker inspect $(CNT_PREFIX) --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}') --port 830 --ns test=urn:notconf:test --set /test:bob/test:bert=Robert
-	netconf-console2 --host $$(docker inspect $(CNT_PREFIX) --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}') --port 830 --get-config -x /bob/bert | grep Robert
+	docker run -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(DOCKER_TAG)-debug netconf-console2 --port 830 --get-config -x /bob/startup | grep Robert
+	docker run -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(DOCKER_TAG)-debug netconf-console2 --port 830 --ns test=urn:notconf:test --set /test:bob/test:bert=Robert
+	docker run -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(DOCKER_TAG)-debug netconf-console2 --port 830 --get-config -x /bob/bert | grep Robert
 	$(MAKE) save-logs
 	$(MAKE) test-stop
 

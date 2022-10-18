@@ -20,8 +20,9 @@ with creating a complete virtual machine (router).
 For running the container from a pre-built image the only prerequisite is docker
 or some other container runtime. Building the base and custom images further
 requires make, git and xmlstarlet and optionally netconf-console2 for NETCONF
-operations testing. For an definitive list check the GitHub action workflow for
-the `build-notconf-base`.
+operations testing. netconf-console2 is also installed in the notconf:debug
+image for convenience. For an definitive list check the GitHub action workflow
+for the `build-notconf-base`.
 
 ### Start a container with custom YANG modules
 
@@ -40,7 +41,10 @@ host directory to the `/yang-modules` directory in the container.
 # start the container and bind mount the `test` directory to `/yang-modules`
 ❯ docker run -d --rm --name notconf-test -v $(pwd)/test:/yang-modules notconf
 # verify the NETCONF server supports the test YANG module
+# with netconf-console2 installed on your local machine:
 ❯ netconf-console2 --host $(docker inspect notconf-test --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}') --port 830 --get /modules-state
+# or run netconf-console2 from the notconf:debug image:
+❯ docker run -i --network container:notconf-test ghcr.io/mzagozen/notconf/notconf:debug netconf-console2 --port 830 --get /modules-state
 ...
     <module>
       <name>test</name>
@@ -83,7 +87,7 @@ Successfully tagged notconf-test:latest
 
 # start the container with the composed image and verify the test.yang module is present
 ❯ docker run -d --rm --name notconf-test -v $(pwd)/test:/yang-modules notconf
-❯ netconf-console2 --host $(docker inspect notconf-test --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}') --port 830 --get -x '/modules-state/module[name="test"]'
+❯ docker run -i --rm --network container:notconf-test ghcr.io/mzagozen/notconf/notconf:debug netconf-console2 --port 830 --get -x '/modules-state/module[name="test"]'
 <?xml version='1.0' encoding='UTF-8'?>
 <data xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
   <modules-state xmlns="urn:ietf:params:xml:ns:yang:ietf-yang-library">

@@ -35,7 +35,6 @@ before_script:
   - *helper_mark_section
   - mark_section_start initialize Initializing
   - which docker xmlstarlet >/dev/null || (echo "Installing prerequisites..." && apt-get -y update && DEBIAN_FRONTEND=noninteractive apt-get install -qy apt-transport-https ca-certificates software-properties-common xmlstarlet; which docker || (echo "Installing docker..." && curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add - && apt-key fingerprint 0EBFCD88 && add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/debian $(lsb_release -cs) stable" && apt-get -y update && apt-get -qy install -qy docker-ce docker-ce-cli containerd.io))
-  - which netconf-console2 > /dev/null || (which pip3 >/dev/null || (echo "Installing pip3" && apt-get -y update && apt-get -qy install python3-setuptools && curl -sSL https://bootstrap.pypa.io/get-pip.py | python3) && echo "Installing python prerequisites..." && pip3 install --upgrade netconf-console2 pyang)
   - mark_section_end initialize
 
 
