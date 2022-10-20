@@ -48,6 +48,5 @@ jobs:
     - name: Store container logs in artifact
       uses: actions/upload-artifact@v3
       with:
-        name: docker-logs
-        path: docker-logs/
-
+        name: container-logs
+        path: container-logs/
