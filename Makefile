@@ -28,7 +28,7 @@ DOCKER_BUILD_CACHE_ARG?=--no-cache
 endif
 endif
 
-DOCKER_TAG?=$(PNS)
+IMAGE_TAG?=$(PNS)
 
 .PHONY: build test tag-release push-release push test
 
@@ -69,20 +69,20 @@ build:
 # dependencies are installed and source code is pulled), which allows us to
 # control caching of it through the DOCKER_BUILD_CACHE_ARG.
 	$(CONTAINER_RUNTIME) build --target build-tools-source $(DOCKER_BUILD_CACHE_ARG) .
-	$(CONTAINER_RUNTIME) build --target notconf-release -t $(IMAGE_PATH)notconf:$(DOCKER_TAG) --build-arg BUILD_TYPE=Release .
-	$(CONTAINER_RUNTIME) build --target notconf-debug -t $(IMAGE_PATH)notconf:$(DOCKER_TAG)-debug --build-arg BUILD_TYPE=Debug .
+	$(CONTAINER_RUNTIME) build --target notconf-release -t $(IMAGE_PATH)notconf:$(IMAGE_TAG) --build-arg BUILD_TYPE=Release .
+	$(CONTAINER_RUNTIME) build --target notconf-debug -t $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug --build-arg BUILD_TYPE=Debug .
 
 tag-release:
-	$(CONTAINER_RUNTIME) tag $(IMAGE_PATH)notconf:$(DOCKER_TAG) $(IMAGE_PATH)notconf:latest
-	$(CONTAINER_RUNTIME) tag $(IMAGE_PATH)notconf:$(DOCKER_TAG)-debug $(IMAGE_PATH)notconf:debug
+	$(CONTAINER_RUNTIME) tag $(IMAGE_PATH)notconf:$(IMAGE_TAG) $(IMAGE_PATH)notconf:latest
+	$(CONTAINER_RUNTIME) tag $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug $(IMAGE_PATH)notconf:debug
 
 push-release:
 	$(CONTAINER_RUNTIME) push $(IMAGE_PATH)notconf:debug
 	$(CONTAINER_RUNTIME) push $(IMAGE_PATH)notconf:latest
 
 push:
-	$(CONTAINER_RUNTIME) push $(IMAGE_PATH)notconf:$(DOCKER_TAG)
-	$(CONTAINER_RUNTIME) push $(IMAGE_PATH)notconf:$(DOCKER_TAG)-debug
+	$(CONTAINER_RUNTIME) push $(IMAGE_PATH)notconf:$(IMAGE_TAG)
+	$(CONTAINER_RUNTIME) push $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug
 
 test: export CNT_PREFIX=test-notconf-$(PNS)
 test:
@@ -93,15 +93,15 @@ test:
 # because the path does not exist on the host, only in the test container. As a
 # workaround we first create the container and then copy the YANG module to the
 # target location.
-#	docker run -d --name $(CNT_PREFIX) -v $$(pwd)/test:/yang-modules $(IMAGE_PATH)notconf:$(DOCKER_TAG)
-	$(CONTAINER_RUNTIME) create --name $(CNT_PREFIX) $(IMAGE_PATH)notconf:$(DOCKER_TAG)
+#	docker run -d --name $(CNT_PREFIX) -v $$(pwd)/test:/yang-modules $(IMAGE_PATH)notconf:$(IMAGE_TAG)
+	$(CONTAINER_RUNTIME) create --name $(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)
 	$(CONTAINER_RUNTIME) cp test/test.yang $(CNT_PREFIX):/yang-modules/
 	$(CONTAINER_RUNTIME) cp test/test.xml $(CNT_PREFIX):/yang-modules/
 	$(CONTAINER_RUNTIME) start $(CNT_PREFIX)
 	$(MAKE) wait-healthy
-	$(CONTAINER_RUNTIME) run -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(DOCKER_TAG)-debug netconf-console2 --port 830 --get-config -x /bob/startup | grep Robert
-	$(CONTAINER_RUNTIME) run -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(DOCKER_TAG)-debug netconf-console2 --port 830 --ns test=urn:notconf:test --set /test:bob/test:bert=Robert
-	$(CONTAINER_RUNTIME) run -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(DOCKER_TAG)-debug netconf-console2 --port 830 --get-config -x /bob/bert | grep Robert
+	$(CONTAINER_RUNTIME) run -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug netconf-console2 --port 830 --get-config -x /bob/startup | grep Robert
+	$(CONTAINER_RUNTIME) run -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug netconf-console2 --port 830 --ns test=urn:notconf:test --set /test:bob/test:bert=Robert
+	$(CONTAINER_RUNTIME) run -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug netconf-console2 --port 830 --get-config -x /bob/bert | grep Robert
 	$(MAKE) save-logs
 	$(MAKE) test-stop
 
@@ -113,8 +113,8 @@ test-stop:
 # test suite in Docker. Obviously both container runtimes must be installed on
 # the machine.
 test-podman-to-docker:
-	podman save $(IMAGE_PATH)notconf:$(DOCKER_TAG) | docker load
-	podman save $(IMAGE_PATH)notconf:$(DOCKER_TAG)-debug | docker load
+	podman save $(IMAGE_PATH)notconf:$(IMAGE_TAG) | docker load
+	podman save $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug | docker load
 	CONTAINER_RUNTIME=docker $(MAKE) test
 
 save-logs: CNT_PREFIX?=test-notconf

@@ -75,8 +75,8 @@ then copies the results to a clean image.
 ❯ docker build -f Dockerfile.yang -t notconf-test --build-arg COMPOSE_PATH=test .
 Sending build context to Docker daemon
 Step 1/9 : ARG IMAGE_PATH
-Step 2/9 : ARG DOCKER_TAG=latest
-Step 3/9 : FROM ${IMAGE_PATH}notconf:${DOCKER_TAG} AS notconf-install
+Step 2/9 : ARG IMAGE_TAG=latest
+Step 3/9 : FROM ${IMAGE_PATH}notconf:${IMAGE_TAG} AS notconf-install
  ---> 62b1b5b48905
 Step 4/9 : ARG COMPOSE_PATH
  ---> Running in 9cf6b8d26422
@@ -104,7 +104,7 @@ Successfully tagged notconf-test:latest
 
 Note: `Dockerfile.yang` has two additional optional build arguments:
 - `IMAGE_PATH`: prefix to the base notconf docker image, like `registry.example.org/notconf`, defaults to empty string
-- `DOCKER_TAG`: suffix to the base notconf docker image, defaults to `latest`
+- `IMAGE_TAG`: suffix to the base notconf docker image, defaults to `latest`
 
 ### Compose a custom notconf image with vendor YANG modules
 
