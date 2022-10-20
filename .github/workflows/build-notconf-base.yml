@@ -4,6 +4,7 @@ on: [push, pull_request]
 
 env:
   IMAGE_PATH: ghcr.io/mzagozen/notconf/
+  CONTAINER_RUNTIME: podman
 
 jobs:
   build:
