@@ -109,6 +109,14 @@ test-stop: CNT_PREFIX?=test-notconf
 test-stop:
 	$(CONTAINER_RUNTIME) ps -aqf name=$(CNT_PREFIX) | xargs --no-run-if-empty docker rm -f
 
+# This test exports the images we built with Podman to Docker and then runs the
+# test suite in Docker. Obviously both container runtimes must be installed on
+# the machine.
+test-podman-to-docker:
+	podman save $(IMAGE_PATH)notconf:$(DOCKER_TAG) | docker load
+	podman save $(IMAGE_PATH)notconf:$(DOCKER_TAG)-debug | docker load
+	CONTAINER_RUNTIME=docker $(MAKE) test
+
 save-logs: CNT_PREFIX?=test-notconf
 save-logs:
 	mkdir -p docker-logs
