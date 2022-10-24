@@ -17,16 +17,16 @@ with creating a complete virtual machine (router).
 
 ### Prerequisites
 
-For running the container from a pre-built image the only prerequisite is docker
-or some other container runtime. Building the base and custom images further
-requires make, git and xmlstarlet and optionally netconf-console2 for NETCONF
-operations testing. netconf-console2 is also installed in the notconf:debug
-image for convenience. For an definitive list check the GitHub action workflow
-for the `build-notconf-base`.
+For running the container from a pre-built image the only prerequisite is Docker
+or some other container runtime like Podman. Building the base and custom images
+further requires make, git and xmlstarlet and optionally netconf-console2 for
+NETCONF operations testing. netconf-console2 is also installed in the
+notconf:debug image for convenience. For an definitive list check the GitHub
+action workflow for the `build-notconf-base`.
 
 ### Start a container with custom YANG modules
 
-The base docker image `notconf:latest` contains the Netopeer2 installation with
+The base container image `notconf:latest` contains the Netopeer2 installation with
 all of its runtime dependencies. The set of YANG modules included in the NETCONF
 server is the bare minimum to make Netopeer2 work. This is enough for any
 NETCONF client to establish a NETCONF session, but not much else. You will most
@@ -75,8 +75,8 @@ then copies the results to a clean image.
 ❯ docker build -f Dockerfile.yang -t notconf-test --build-arg COMPOSE_PATH=test .
 Sending build context to Docker daemon
 Step 1/9 : ARG IMAGE_PATH
-Step 2/9 : ARG DOCKER_TAG=latest
-Step 3/9 : FROM ${IMAGE_PATH}notconf:${DOCKER_TAG} AS notconf-install
+Step 2/9 : ARG IMAGE_TAG=latest
+Step 3/9 : FROM ${IMAGE_PATH}notconf:${IMAGE_TAG} AS notconf-install
  ---> 62b1b5b48905
 Step 4/9 : ARG COMPOSE_PATH
  ---> Running in 9cf6b8d26422
@@ -103,8 +103,8 @@ Successfully tagged notconf-test:latest
 ```
 
 Note: `Dockerfile.yang` has two additional optional build arguments:
-- `IMAGE_PATH`: prefix to the base notconf docker image, like `registry.example.org/notconf`, defaults to empty string
-- `DOCKER_TAG`: suffix to the base notconf docker image, defaults to `latest`
+- `IMAGE_PATH`: prefix to the base notconf container image, like `ghcr.io/mzagozen/notconf/notconf`, defaults to empty string
+- `IMAGE_TAG`: suffix to the base notconf container image, defaults to `latest`
 
 ### Compose a custom notconf image with vendor YANG modules
 

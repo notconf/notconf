@@ -4,6 +4,7 @@ on: [push, pull_request]
 
 env:
   IMAGE_PATH: ghcr.io/mzagozen/notconf/
+  CONTAINER_RUNTIME: podman
 
 jobs:
   build:
@@ -22,21 +23,23 @@ jobs:
     - name: Update deps
       run: make clone-deps
 
-    - name: Build docker images
+    - name: Build container images
       run: make build
 
     - name: Run tests
-      run: make test
+      run: |
+        make test
+        make test-podman-to-docker
 
-    - name: Log in to the Container registry
-      uses: docker/login-action@v2
+    - name: Log in to the container registry
+      uses: redhat-actions/podman-login@v1
       if: ${{ github.ref_name == 'main' }}
       with:
         registry: ghcr.io
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Tag and push docker images
+    - name: Tag and push container images
       if: ${{ github.ref_name == 'main' }}
       run: |
         make tag-release
@@ -45,6 +48,5 @@ jobs:
     - name: Store container logs in artifact
       uses: actions/upload-artifact@v3
       with:
-        name: docker-logs
-        path: docker-logs/
-
+        name: container-logs
+        path: container-logs/
