@@ -92,8 +92,8 @@ test:
 # itself is executed in a (CI runner) container bind mounting a path won't work
 # because the path does not exist on the host, only in the test container. As a
 # workaround we first create the container and then copy the YANG module to the
-# target location.
-#	docker run -d --name $(CNT_PREFIX) -v $$(pwd)/test:/yang-modules $(IMAGE_PATH)notconf:$(IMAGE_TAG)
+# target location. The following command would probably work on your local machine:
+#	$(CONTAINER_RUNTIME) run -d --name $(CNT_PREFIX) -v $$(pwd)/test:/yang-modules $(IMAGE_PATH)notconf:$(IMAGE_TAG)
 	$(CONTAINER_RUNTIME) create --name $(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)
 	$(CONTAINER_RUNTIME) cp test/test.yang $(CNT_PREFIX):/yang-modules/
 	$(CONTAINER_RUNTIME) cp test/test.xml $(CNT_PREFIX):/yang-modules/
@@ -107,7 +107,7 @@ test:
 
 test-stop: CNT_PREFIX?=test-notconf
 test-stop:
-	$(CONTAINER_RUNTIME) ps -aqf name=$(CNT_PREFIX) | xargs --no-run-if-empty docker rm -f
+	$(CONTAINER_RUNTIME) ps -aqf name=$(CNT_PREFIX) | xargs --no-run-if-empty $(CONTAINER_RUNTIME) rm -f
 
 # This test exports the images we built with Podman to Docker and then runs the
 # test suite in Docker. Obviously both container runtimes must be installed on
