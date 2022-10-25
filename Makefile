@@ -129,8 +129,50 @@ SHELL=/bin/bash
 
 wait-healthy:
 	@echo "Waiting (up to 900 seconds) for containers with prefix $(CNT_PREFIX) to become healthy"
+ifeq ($(CONTAINER_RUNTIME),docker)
 	@OLD_COUNT=0; for I in $$(seq 1 900); do \
-		COUNT=$$($(CONTAINER_RUNTIME) ps -f name=$(CNT_PREFIX) | egrep "(unhealthy|health: starting)" | wc -l); \
+		STOPPED=$$($(CONTAINER_RUNTIME) ps -a --filter name=$(CNT_PREFIX) | grep "Exited"); \
+		if [ -n "$${STOPPED}" ]; then \
+			echo -e "\e[31m===  $${SECONDS}s elapsed - Container(s) unexpectedly exited"; \
+			echo -e "$${STOPPED} \\e[0m"; \
+			exit 1; \
+		fi; \
+		COUNT=$$($(CONTAINER_RUNTIME) ps --filter name=$(CNT_PREFIX) | egrep "(unhealthy|health: starting)" | wc -l); \
+		if [ $${COUNT} -gt 0 ]; then  \
+			if [ $${OLD_COUNT} -ne $${COUNT} ];\
+			then \
+				echo -e "\e[31m===  $${SECONDS}s elapsed - Found unhealthy/starting ($${COUNT}) containers";\
+				$(CONTAINER_RUNTIME) ps --filter name=$(CNT_PREFIX) | egrep "(unhealthy|health: starting)" | awk '{ print $$(NF) }';\
+				echo -e "Checking again every 1 second, no more messages until changes detected\\e[0m"; \
+			fi;\
+			sleep 1; \
+			OLD_COUNT=$${COUNT};\
+			continue; \
+		else \
+			echo -e "\e[32m=== $${SECONDS}s elapsed - Did not find any unhealthy containers, all is good.\e[0m"; \
+			exit 0; \
+		fi ;\
+	done; \
+	echo -e "\e[31m===  $${SECONDS}s elapsed - Found unhealthy/starting ($${COUNT}) containers";\
+	$(CONTAINER_RUNTIME) ps -a --filter name=$(CNT_PREFIX) --format 'table {{.Names}}\t{{.Status}}'; \
+	echo -e "\e[0m"; \
+	exit 1
+else
+# This is a compatibility hack for old podman (3.x) not properly reading the
+# healtcheck config from (docker) image metadata. The containers start without a
+# healthcheck so we have to emulate it here. This is supposedly fixed in 4.x:
+# https://github.com/containers/podman/pull/12239
+	@OLD_COUNT=0; for I in $$(seq 1 900); do \
+		STOPPED=$$($(CONTAINER_RUNTIME) ps -a --filter name=$(CNT_PREFIX) | grep "Exited"); \
+		if [ -n "$${STOPPED}" ]; then \
+			echo -e "\e[31m===  $${SECONDS}s elapsed - Container(s) unexpectedly exited"; \
+			echo -e "$${STOPPED} \\e[0m"; \
+			exit 1; \
+		fi; \
+		CONTAINERS=$$($(CONTAINER_RUNTIME) ps -aq --filter name=$(CNT_PREFIX)); \
+		TOTAL_COUNT=$$(echo "${CONTAINERS}" | wc -l); \
+		HEALTHY_COUNT=$$($(CONTAINER_RUNTIME) logs $${CONTAINERS} | egrep 'Listening on .* for SSH connections' | wc -l); \
+		COUNT=$$(echo "$${TOTAL_COUNT}-$${HEALTHY_COUNT}" | bc); \
 		if [ $$COUNT -gt 0 ]; then  \
 			if [ $$OLD_COUNT -ne $$COUNT ];\
 			then \
@@ -147,6 +189,7 @@ wait-healthy:
 		fi ;\
 	done; \
 	echo -e "\e[31m===  $${SECONDS}s elapsed - Found unhealthy/starting ($${COUNT}) containers";\
-	$(CONTAINER_RUNTIME) ps -f name=$(CNT_PREFIX) | egrep "(unhealthy|health: starting)" | awk '{ print $$(NF) }';\
+	$(CONTAINER_RUNTIME) ps -a --filter name=$(CNT_PREFIX) --format 'table {{.Names}}\t{{.Status}}'; \
 	echo -e "\e[0m"; \
 	exit 1
+endif
