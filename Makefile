@@ -122,7 +122,7 @@ save-logs:
 	mkdir -p container-logs
 	@for c in $$($(CONTAINER_RUNTIME) ps -af name=$(CNT_PREFIX) --format '{{.Names}}'); do \
 		echo "== Collecting logs from $${c}"; \
-		$(CONTAINER_RUNTIME) logs $${c} > container-logs/$${c} 2>&1; \
+		$(CONTAINER_RUNTIME) logs $${c} > container-logs/$${c}.log 2>&1; \
 	done
 
 SHELL=/bin/bash

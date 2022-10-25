@@ -31,6 +31,13 @@ jobs:
         make test
         make test-podman-to-docker
 
+    - name: Save logs for running containers
+      if: always()
+      # After a successful test run there should be no containers left in the
+      # GitHub runner (a runner is an isolated VM). Any leftover containers are
+      # a result of a test failing so we should get the logs!
+      run: CNT_PREFIX= make save-logs
+
     - name: Log in to the container registry
       uses: redhat-actions/podman-login@v1
       if: ${{ github.ref_name == 'main' }}
@@ -47,6 +54,7 @@ jobs:
 
     - name: Store container logs in artifact
       uses: actions/upload-artifact@v3
+      if: always()
       with:
         name: container-logs
         path: container-logs/
