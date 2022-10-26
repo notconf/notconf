@@ -71,7 +71,7 @@ before_script:
   artifacts:
     when: always
     paths:
-      - "**/docker-logs/"
+      - "**/container-logs/"
 
 build:
   extends: .build
