@@ -121,10 +121,10 @@ save-logs: CNT_PREFIX?=test-notconf
 save-logs:
 	mkdir -p container-logs
 	@for c in $$($(CONTAINER_RUNTIME) ps -af name=$(CNT_PREFIX) --format '{{.Names}}'); do \
-		echo "== Collecting logs from $${c}"; \
-		$(CONTAINER_RUNTIME) logs --timestamps $${c} > container-logs/$${c}.log 2>&1; \
-		$(CONTAINER_RUNTIME) inspect $${c} > container-logs/$${c}_inspect.log; \
-		$(CONTAINER_RUNTIME) run -i --rm --network container:$${c} $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug netconf-console2 --port 830 --hello > container-logs/$${c}_netconf.log || true; \
+		echo "== Collecting $(CONTAINER_RUNTIME) logs from $${c}"; \
+		$(CONTAINER_RUNTIME) logs --timestamps $${c} > container-logs/$(CONTAINER_RUNTIME)_$${c}.log 2>&1; \
+		$(CONTAINER_RUNTIME) inspect $${c} > container-logs/$(CONTAINER_RUNTIME)_$${c}_inspect.log; \
+		$(CONTAINER_RUNTIME) run -i --rm --network container:$${c} $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug netconf-console2 --port 830 --hello > container-logs/$(CONTAINER_RUNTIME)_$${c}_netconf.log || true; \
 	done
 
 SHELL=/bin/bash
