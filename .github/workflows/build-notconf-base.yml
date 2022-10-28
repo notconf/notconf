@@ -12,6 +12,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - name: Show podman info
+      run: |
+        podman info --format '{{ .Host.LogDriver }}'
+        podman create --help | grep log-driver
+        podman info
+
     - uses: actions/checkout@v3
 
     - name: Cache deps
