@@ -13,6 +13,8 @@ endif
 
 ifneq ($(CI_PIPELINE_ID),)
 PNS:=$(CI_PIPELINE_ID)
+else ifneq ($(GITHUB_RUN_ID),)
+PNS:=$(GITHUB_RUN_ID)
 else
 PNS:=$(shell whoami | sed 's/[^[:alnum:]._-]\+/_/g')
 endif
@@ -96,11 +98,15 @@ tag-release-composed-notconf: composed-notconf.txt
 push-release-composed-notconf: composed-notconf.txt
 	for release_tag in $$(sed 's/-$(PNS)$$//g' $< | uniq); do $(CONTAINER_RUNTIME) push $${release_tag}; done
 
+push-composed-notconf: composed-notconf.txt
+	for tag in $$(uniq $<); do $(CONTAINER_RUNTIME) push $${tag}; done
+
 test:
 	$(MAKE) test-notconf-mount
-	$(MAKE) clone-yangmodels
-	> composed-notconf.txt
 	$(MAKE) test-compose-yang YANG_PATH=test
+
+test-yangmodels:
+	> composed-notconf.txt
 	$(MAKE) test-compose-yang YANG_PATH=yang/vendor/nokia/7x50_YangModels/latest_sros_21.20
 	$(MAKE) test-compose-yang YANG_PATH=yang/vendor/nokia/7x50_YangModels/latest_sros_22.2
 	$(MAKE) test-compose-yang YANG_PATH=yang/vendor/juniper/21.1/21.1R1/junos
@@ -281,7 +287,6 @@ compose-notconf-yang:
 		--label org.opencontainers.image.description="This image contains the base notconf installation (sysrepo+netopeer2) with the following YANG modules pre-installed: $(COMPOSE_IMAGE_NAME)/$(COMPOSE_IMAGE_TAG)" .
 	echo $(IMAGE_PATH)notconf-$(COMPOSE_IMAGE_NAME):$(COMPOSE_IMAGE_TAG)-$(PNS) >> composed-notconf.txt
 
-test-compose-yang: export YANG_PATH=$(YANG_PATH)
 test-compose-yang: compose-notconf-yang
 	$(MAKE) test-composed-notconf-yang
 

@@ -1,4 +1,4 @@
-name: build-notconf-base
+name: build-notconf
 
 on: [push, pull_request]
 
@@ -7,8 +7,7 @@ env:
   CONTAINER_RUNTIME: podman
 
 jobs:
-  build:
-
+  build-notconf-base:
     runs-on: ubuntu-latest
 
     steps:
@@ -32,6 +31,59 @@ jobs:
     - name: Build container images
       run: make build
 
+    - name: Run tests
+      run: |
+        make test
+        make test-podman-to-docker
+
+    - name: Save logs for running containers
+      if: always()
+      # After a successful test run there should be no containers left in the
+      # GitHub runner (a runner is an isolated VM). Any leftover containers are
+      # a result of a test failing so we should get the logs!
+      run: CNT_PREFIX= make save-logs
+
+    - name: Log in to the container registry
+      uses: redhat-actions/podman-login@v1
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Tag and push container images
+      if: ${{ github.ref_name == 'main' }}
+      run: |
+        make tag-release
+        make push-release
+
+    - name: Tag and push container images
+      if: ${{ github.ref_name != 'main' }}
+      run: |
+        make push
+
+    - name: Store container logs in artifact
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: container-logs
+        path: container-logs/
+
+  build-yangmodels:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        path: [yang/vendor/nokia/7x50_YangModels/latest_sros_21.10, yang/vendor/nokia/7x50_YangModels/latest_sros_22.2, yang/vendor/juniper/21.1/21.1R1/junos]
+    needs: build-notconf-base
+
+    steps:
+    - name: Show podman info
+      run: |
+        podman info --format '{{ .Host.LogDriver }}'
+        podman create --help | grep log-driver
+        podman info
+
+    - uses: actions/checkout@v3
+
     - name: Install test prerequisites
       run: |
         pip3 install pyang
@@ -48,8 +100,7 @@ jobs:
 
     - name: Run tests
       run: |
-        make test
-        make test-podman-to-docker
+        make test-compose-yang YANG_PATH=${{ matrix.path }}
 
     - name: Save logs for running containers
       if: always()
@@ -69,8 +120,6 @@ jobs:
     - name: Tag and push container images
       if: ${{ github.ref_name == 'main' }}
       run: |
-        make tag-release
-        make push-release
         make tag-release-composed-notconf
         make push-release-composed-notconf
 
