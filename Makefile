@@ -42,11 +42,11 @@ clone-or-update:
 		git checkout $(BRANCH); \
 	fi
 
-LIBYANG_TAG=v2.0.231
-SYSREPO_TAG=v2.1.84
-LIBSSH_TAG=libssh-0.9.6
-LIBNETCONF2_TAG=v2.1.18
-NETOPEER2_TAG=v2.1.36
+LIBYANG_TAG=v2.1.4
+SYSREPO_TAG=v2.2.12
+LIBSSH_TAG=libssh-0.10.4
+LIBNETCONF2_TAG=v2.1.25
+NETOPEER2_TAG=v2.1.42
 clone-deps:
 	$(MAKE) clone-or-update REPOSITORY=https://github.com/CESNET/libyang.git BRANCH=$(LIBYANG_TAG)
 	$(MAKE) clone-or-update REPOSITORY=https://github.com/sysrepo/sysrepo.git BRANCH=$(SYSREPO_TAG)
