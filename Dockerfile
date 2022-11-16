@@ -90,7 +90,8 @@ FROM builder as notconf-debug
 LABEL org.opencontainers.image.source="https://github.com/mzagozen/notconf"
 LABEL org.opencontainers.image.description="This is the debug build of notconf - the server (netopeer2) and its dependencies (sysrepo, libnetconf2, libyang) are built with the debug flag set. The image also includes a compiler (clang) and debugging tools (gdb and valgrind). Start the container with the device YANG modules mounted to /yang-modules to simulate the NETCONF management interface."
 
-RUN apt-get install -qy python3-pip \
+RUN apt-get update \
+ && apt-get install -qy python3-pip \
  && pip3 install netconf-console2 \
  && apt-get -qy remove python3-pip \
  && apt-get -qy autoremove \
