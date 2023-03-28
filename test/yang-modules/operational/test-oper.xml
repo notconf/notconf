@@ -1,0 +1,8 @@
+<!-- This is the operational (config false) data for the test.yang module. It
+will be automatically merged into the sysrepo operational datastore by the
+load-oper-data.py script -->
+<bob xmlns="urn:notconf:test">
+	<state>
+		<great>success</great>
+	</state>
+</bob>

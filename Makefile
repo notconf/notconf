@@ -42,11 +42,15 @@ clone-or-update:
 		git checkout $(BRANCH); \
 	fi
 
+# These (git) tags pin the components to a specific version number
 LIBYANG_TAG=v2.1.4
 SYSREPO_TAG=v2.2.12
 LIBSSH_TAG=libssh-0.10.4
 LIBNETCONF2_TAG=v2.1.25
 NETOPEER2_TAG=v2.1.42
+# These versions pin the sysrepo-python and libyang-python PyPI packages
+SYSREPO_PYTHON_VERSION=1.4.0
+LIBYANG_PYTHON_VERSION=2.7.0
 clone-deps:
 	$(MAKE) clone-or-update REPOSITORY=https://github.com/CESNET/libyang.git BRANCH=$(LIBYANG_TAG)
 	$(MAKE) clone-or-update REPOSITORY=https://github.com/sysrepo/sysrepo.git BRANCH=$(SYSREPO_TAG)
@@ -54,6 +58,7 @@ clone-deps:
 	$(MAKE) clone-or-update REPOSITORY=https://github.com/CESNET/libnetconf2.git BRANCH=$(LIBNETCONF2_TAG)
 	$(MAKE) clone-or-update REPOSITORY=https://github.com/CESNET/netopeer2.git BRANCH=$(NETOPEER2_TAG)
 
+CONTAINER_BUILD_ARGS=--build-arg SYSREPO_PYTHON_VERSION=$(SYSREPO_PYTHON_VERSION) --build-arg LIBYANG_PYTHON_VERSION=$(LIBYANG_PYTHON_VERSION)
 # BuildKit speeds up the image builds by running independent stages in a
 # multi-stage Dockerfile concurrently. BuildKit is a breeze to use with Docker -
 # everything just works automagically when you set the env var. The process is a
@@ -69,8 +74,8 @@ build:
 # dependencies are installed and source code is pulled), which allows us to
 # control caching of it through the DOCKER_BUILD_CACHE_ARG.
 	$(CONTAINER_RUNTIME) build --target build-tools-source $(DOCKER_BUILD_CACHE_ARG) .
-	$(CONTAINER_RUNTIME) build --target notconf-release -t $(IMAGE_PATH)notconf:$(IMAGE_TAG) --build-arg BUILD_TYPE=Release .
-	$(CONTAINER_RUNTIME) build --target notconf-debug -t $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug --build-arg BUILD_TYPE=Debug .
+	$(CONTAINER_RUNTIME) build --target notconf-release -t $(IMAGE_PATH)notconf:$(IMAGE_TAG) --build-arg BUILD_TYPE=Release $(CONTAINER_BUILD_ARGS) .
+	$(CONTAINER_RUNTIME) build --target notconf-debug -t $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug --build-arg BUILD_TYPE=Debug $(CONTAINER_BUILD_ARGS) .
 
 tag-release:
 	$(CONTAINER_RUNTIME) tag $(IMAGE_PATH)notconf:$(IMAGE_TAG) $(IMAGE_PATH)notconf:latest
@@ -101,6 +106,7 @@ test:
 	$(CONTAINER_RUNTIME) run -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug netconf-console2 --port 830 --get-config -x /bob/startup | grep Robert
 	$(CONTAINER_RUNTIME) run -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug netconf-console2 --port 830 --ns test=urn:notconf:test --set /test:bob/test:bert=Robert
 	$(CONTAINER_RUNTIME) run -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug netconf-console2 --port 830 --get-config -x /bob/bert | grep Robert
+	$(CONTAINER_RUNTIME) run -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug netconf-console2 --port 830 --get -x /bob/state/great | grep success
 	$(MAKE) save-logs
 	$(MAKE) test-stop
 
