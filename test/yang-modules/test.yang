@@ -10,5 +10,11 @@ module test {
     leaf bert {
       type string;
     }
+    container state {
+      config false;
+      leaf great {
+        type string;
+      }
+    }
   }
 }

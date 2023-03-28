@@ -93,10 +93,9 @@ test:
 # because the path does not exist on the host, only in the test container. As a
 # workaround we first create the container and then copy the YANG module to the
 # target location. The following command would probably work on your local machine:
-#	$(CONTAINER_RUNTIME) run -d --name $(CNT_PREFIX) -v $$(pwd)/test:/yang-modules $(IMAGE_PATH)notconf:$(IMAGE_TAG)
+#	$(CONTAINER_RUNTIME) run -d --name $(CNT_PREFIX) -v $$(pwd)/test/yang-modules:/yang-modules $(IMAGE_PATH)notconf:$(IMAGE_TAG)
 	$(CONTAINER_RUNTIME) create --log-driver json-file --name $(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)
-	$(CONTAINER_RUNTIME) cp test/test.yang $(CNT_PREFIX):/yang-modules/
-	$(CONTAINER_RUNTIME) cp test/test.xml $(CNT_PREFIX):/yang-modules/
+	$(CONTAINER_RUNTIME) cp test/yang-modules $(CNT_PREFIX):/
 	$(CONTAINER_RUNTIME) start $(CNT_PREFIX)
 	$(MAKE) wait-healthy
 	$(CONTAINER_RUNTIME) run -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug netconf-console2 --port 830 --get-config -x /bob/startup | grep Robert
