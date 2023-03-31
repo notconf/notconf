@@ -10,6 +10,12 @@ automation systems that produce configuration or otherwise interface with the
 device over NETCONF. The simulated device consumes few resources in contrast
 with creating a complete virtual machine (router).
 
+If you are familiar with Cisco NSO, notconf is a drop-in replacement for netsim.
+The advantages of notconf over netsim are:
+- notconf is open source and based on open source software
+- building a custom image with custom (vendor) YANG modules is easy and faster
+  than with netsim (no YANG compilation required)
+
 [Netopeer2]: https://github.com/CESNET/Netopeer2
 [sysrepo]: https://github.com/sysrepo/sysrepo
 
@@ -115,7 +121,7 @@ sysrepo to accept them. This repository contains "fixup" Makefiles for the
 platforms:
 - nokia/sros
 - juniper/junos
-- cisco/xr (still a work in progress)
+- cisco/xr
 
 [YangModels/yang]: https://github.com/YangModels/yang
 
@@ -138,7 +144,7 @@ contain operational data.
 Any XML files placed in the `/yang-modules/operational` directory in the
 container will be automatically imported into the operational datastore when the
 notconf container starts, or when any change is detected to this directory. The
-XML files must conform to YANG models loaded and *must not* contain operational
+XML files must conform to YANG models loaded and *must not* contain configuration
 data.
 
 To update operational data in a running notconf container just update one of the
@@ -175,13 +181,7 @@ Operational data sync done!
 
 ## WIP and planned work
 
-- [ ] Build a notconf image with YANG models for Cisco IOS XR
-  - Installation of YANG models from the [YangModels] repository works, but
-    after loading certain (complex?) models the installation process slows down
-    significantly - installing each file *after* takes longer (4s+).
-  - `%Cisco-IOS-XR-ipv4-bgp-oper.yang %Cisco-IOS-XR-ipv4-bgp-oc-oper.yang` for
-    example trigger this. Need to investigate and report upstream to see if
-    sysrepo can be improved??
+- [ ] Automatically build composed images for more platforms (+ versions)
 
 ### Debugging sysrepo and Netopeer2
 
