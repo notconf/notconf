@@ -1,9 +1,10 @@
+import argparse
+import datetime
 import logging
 import pathlib
 import signal
 import threading
 
-import argparse
 import libyang
 import sysrepo
 
@@ -11,7 +12,7 @@ logging.basicConfig(level=logging.DEBUG, format="[%(levelname)s] %(message)s")
 sysrepo.configure_logging(py_logging=True)
 libyang.configure_logging(enable_py_logger=True)
 
-def load_data(stop, files):
+def load_data(stop, sync_done, files):
     with sysrepo.SysrepoConnection() as conn:
         with conn.start_session("operational") as sess:
             with conn.get_ly_ctx() as ctx:
@@ -21,6 +22,7 @@ def load_data(stop, files):
                         data = ctx.parse_data_file(f, "xml", parse_only=True)
                     sess.edit_batch_ly(data)
                     sess.apply_changes()
+            sync_done.set()
             spam = 0
             while not stop.wait(1):
                 if spam % 60 == 0:
@@ -32,6 +34,7 @@ def main():
     g = parser.add_mutually_exclusive_group()
     g.add_argument("--path", default="/yang-modules/operational/")
     g.add_argument("--file")
+    parser.add_argument('--sync-file', '-s')
     args = parser.parse_args()
     if args.path:
         search_path = pathlib.Path(args.path)
@@ -41,8 +44,14 @@ def main():
         files = [args.file]
 
     stop = threading.Event()
-    t = threading.Thread(target=load_data, args=(stop, files))
+    sync_done = threading.Event()
+    t = threading.Thread(target=load_data, args=(stop, sync_done, files))
     t.start()
+    sync_done.wait()
+    logging.info('done merging operational data')
+    if args.sync_file:
+        with open(args.sync_file, 'w') as f:
+            f.write(str(datetime.datetime.utcnow()))
     signal.sigwait({signal.SIGINT, signal.SIGTERM})
     stop.set()
     t.join()
