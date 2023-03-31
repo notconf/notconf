@@ -50,7 +50,7 @@ before_script:
     - make clone-deps
     - mark_section_end clone-deps
     - mark_section_start build Building
-    - make build
+    - make -j build
     - mark_section_end build
     - mark_section_start test-run "Running tests"
     - make test

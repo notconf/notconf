@@ -30,7 +30,7 @@ endif
 
 IMAGE_TAG?=$(PNS)
 
-.PHONY: build test tag-release push-release push test
+.PHONY: build _build-release _build-debug test tag-release push-release push test
 
 clone-or-update: BRANCH?=devel
 clone-or-update: DIR:=$(basename $(lastword $(subst /, ,$(REPOSITORY))))
@@ -69,7 +69,13 @@ build:
 # dependencies are installed and source code is pulled), which allows us to
 # control caching of it through the DOCKER_BUILD_CACHE_ARG.
 	$(CONTAINER_RUNTIME) build --target build-tools-source $(DOCKER_BUILD_CACHE_ARG) .
+# Then we can build the release and debug images in parallel because the next
+# stages branch off to use different BUILD_TYPE arg
+	$(MAKE) _build-release _build-debug
+
+_build-release:
 	$(CONTAINER_RUNTIME) build --target notconf-release -t $(IMAGE_PATH)notconf:$(IMAGE_TAG) --build-arg BUILD_TYPE=Release .
+_build-debug:
 	$(CONTAINER_RUNTIME) build --target notconf-debug -t $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug --build-arg BUILD_TYPE=Debug .
 
 tag-release:
