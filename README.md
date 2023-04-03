@@ -119,6 +119,58 @@ platforms:
 
 [YangModels/yang]: https://github.com/YangModels/yang
 
+### Mocking startup and operational datastore
+
+In addition to the obvious NETCONF interface for modifying the running
+configuration, notconf also allows users to modify startup configuration and
+operational (config false) data.
+
+#### Startup configuration
+
+Any XML files placed in the `/yang-modules/startup` directory in the container
+will be automatically imported into the startup datastore when the notconf
+container starts. When all files are imported the startup datastore is copied to
+running. The XML files must conform to YANG models loaded and *must not*
+contain operational data.
+
+#### Operational (config false) data
+
+Any XML files placed in the `/yang-modules/operational` directory in the
+container will be automatically imported into the operational datastore when the
+notconf container starts, or when any change is detected to this directory. The
+XML files must conform to YANG models loaded and *must not* contain operational
+data.
+
+To update operational data in a running notconf container just update one of the
+files! When a change is detected all XMLs are sorted by filename and then loaded
+in order. The time to load operational data depends on the set of installed YANG
+modules and the amount of operational data provided in XMLs. If you want to
+ensure your test scripts do not proceed with test before all operational data is
+ready, you can execute the `/wait-operational-sync.sh` script in the container.
+The script will block until the process is complete.
+
+```shell
+# start the container and bind mount the `test` directory to `/yang-modules`
+❯ docker run -d --rm --name notconf-test -v $(pwd)/test/yang-modules:/yang-modules notconf
+# verify operational data in test/yang-modules/operational/test-oper.xml is present
+❯ docker run -i --network container:notconf-test ghcr.io/mzagozen/notconf/notconf:debug netconf-console2 --port 830 --get -x /bob
+<?xml version='1.0' encoding='UTF-8'?>
+<data xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+  <bob xmlns="urn:notconf:test">
+    <startup>Robert!</startup>
+    <state>
+      <great>success</great>
+    </state>
+  </bob>
+</data>
+# now you can modify the files in test/yang-modules/operational and observe the changes
+#
+# for test scripts, if you want to make sure operational data update is done, use the wait-operational-sync.sh script
+❯ docker exec notconf-test /wait-operational-sync.sh
+Triggering operational data sync
+Operational data sync done!
+```
+
 ## Troubleshooting and development
 
 ## WIP and planned work
