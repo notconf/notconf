@@ -43,11 +43,11 @@ clone-or-update:
 	fi
 
 # These (git) tags pin the components to a specific version number
-LIBYANG_TAG=v2.1.4
-SYSREPO_TAG=v2.2.12
+LIBYANG_TAG=v2.1.55
+SYSREPO_TAG=v2.2.60
 LIBSSH_TAG=libssh-0.10.4
-LIBNETCONF2_TAG=v2.1.25
-NETOPEER2_TAG=v2.1.42
+LIBNETCONF2_TAG=v2.1.31
+NETOPEER2_TAG=v2.1.59
 # These versions pin the sysrepo-python and libyang-python PyPI packages
 SYSREPO_PYTHON_VERSION=1.4.0
 LIBYANG_PYTHON_VERSION=2.7.0
