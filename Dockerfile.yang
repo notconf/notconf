@@ -1,0 +1,14 @@
+ARG IMAGE_PATH
+ARG IMAGE_TAG=latest
+
+FROM ${IMAGE_PATH}notconf:${IMAGE_TAG} AS notconf-install
+ARG COMPOSE_PATH
+
+COPY ${COMPOSE_PATH} /notconf
+
+RUN YANG_MODULES_DIR=/notconf /install-yang-modules.sh
+
+FROM ${IMAGE_PATH}notconf:${IMAGE_TAG} AS notconf
+COPY --from=notconf-install /etc/sysrepo /etc/sysrepo
+
+LABEL org.opencontainers.image.source="https://github.com/mzagozen/notconf"

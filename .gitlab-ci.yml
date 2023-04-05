@@ -8,6 +8,7 @@ image: registry.gitlab.com/nso-developer/ci-runner-image:latest
 stages:
   - mirror
   - build
+  - build-yangmodels
 
 # The helper functions mark_section_start/end that help us mark out the start
 # and end of a "section" in a CI job. Each section can be folded and gets a
@@ -44,6 +45,12 @@ before_script:
   except:
     variables:
       - $CI_MODE == "mirror"
+  cache:
+    - key:
+        files:
+          - Makefile
+      paths:
+        - src
   script:
     - if [ -n "${CI_DOCKER_USER}" ]; then echo "Using provided credentials for authentication with docker registry"; docker login -u ${CI_DOCKER_USER} -p ${CI_DOCKER_PASSWORD} ${CI_REGISTRY}; else docker login -u gitlab-ci-token -p ${CI_BUILD_TOKEN} ${CI_REGISTRY}; fi
     - mark_section_start clone-deps "Cloning dependencies"
@@ -75,6 +82,44 @@ before_script:
 
 build:
   extends: .build
+
+build-yangmodels:
+  stage: build-yangmodels
+  parallel:
+    matrix:
+      - YANG_PATH: ["yang/vendor/nokia/7x50_YangModels/latest_sros_21.10", "yang/vendor/juniper/21.1/21.1R1/junos"]
+  except:
+    variables:
+      - $CI_MODE == "mirror"
+  cache:
+    - key:
+        files:
+          - Makefile
+      paths:
+        - yang
+  script:
+    - if [ -n "${CI_DOCKER_USER}" ]; then echo "Using provided credentials for authentication with docker registry"; docker login -u ${CI_DOCKER_USER} -p ${CI_DOCKER_PASSWORD} ${CI_REGISTRY}; else docker login -u gitlab-ci-token -p ${CI_BUILD_TOKEN} ${CI_REGISTRY}; fi
+    - mark_section_start clone-yangmodels "Cloning yangmodels repository"
+    - make clone-yangmodels
+    - mark_section_end clone-yangmodels
+    - mark_section_start test-run "Running tests"
+    - make test-compose-yang
+    - mark_section_end test-run
+    - mark_section_start image-push "Pushing images"
+    - echo "Using Gitlab CI token to authenticate with Docker registry for pushing image"
+    - if [ "${CI_COMMIT_REF_NAME}" = "${CI_DEFAULT_BRANCH}" ]; then make tag-release-composed-notconf; fi
+    - if [ "${CI_COMMIT_REF_NAME}" = "${CI_DEFAULT_BRANCH}" ] && [ "${DOCKER_PUSH}" != "false" ]; then make push-release-composed-notconf; fi
+    - mark_section_end image-push
+  after_script:
+    - *helper_mark_section
+    - mark_section_start test-stop "Stopping residual test containers"
+    - make save-logs
+    - make test-stop
+    - mark_section_end test-stop
+  artifacts:
+    when: always
+    paths:
+      - "**/container-logs/"
 
 # Special CI job for running a mirroring job that pulls in the latest changes
 # from upstream. Unlike normal GitLab mirroring, which fails whenever the local
