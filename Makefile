@@ -103,7 +103,7 @@ push-composed-notconf: composed-notconf.txt
 
 test:
 	$(MAKE) test-notconf-mount
-	$(MAKE) test-compose-yang YANG_PATH=test
+	$(MAKE) test-compose-yang YANG_PATH=test/yang-modules
 
 test-yangmodels:
 	> composed-notconf.txt
@@ -280,7 +280,7 @@ compose-notconf-yang:
 	done
 	if ! ls $(COMPOSE_PATH)/*.yang > /dev/null 2>&1; then \
 		echo "Copying files directly from $(YANG_PATH) without fixups"; \
-		find $(YANG_PATH) -maxdepth 1 -type f -exec cp -t $(COMPOSE_PATH) {} +; \
+		cp -av $(YANG_PATH)/. $(COMPOSE_PATH); \
 	fi
 	$(CONTAINER_RUNTIME) build -f Dockerfile.yang -t $(IMAGE_PATH)notconf-$(COMPOSE_IMAGE_NAME):$(COMPOSE_IMAGE_TAG)-$(PNS) \
 		--build-arg COMPOSE_PATH=$(COMPOSE_PATH) --build-arg IMAGE_PATH=$(IMAGE_PATH) --build-arg IMAGE_TAG=$(IMAGE_TAG) $(DOCKER_BUILD_CACHE_ARG) \
