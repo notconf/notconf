@@ -50,16 +50,15 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Tag and push container images
+    - name: Push pipeline container images
+      run: |
+        make push
+
+    - name: Tag and push release container images
       if: ${{ github.ref_name == 'main' }}
       run: |
         make tag-release
         make push-release
-
-    - name: Tag and push container images
-      if: ${{ github.ref_name != 'main' }}
-      run: |
-        make push
 
     - name: Store container logs in artifact
       uses: actions/upload-artifact@v3
