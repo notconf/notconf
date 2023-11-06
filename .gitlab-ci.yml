@@ -52,7 +52,7 @@ before_script:
       paths:
         - src
   script:
-    - if [ -n "${CI_DOCKER_USER}" ]; then echo "Using provided credentials for authentication with docker registry"; docker login -u ${CI_DOCKER_USER} -p ${CI_DOCKER_PASSWORD} ${CI_REGISTRY}; else docker login -u gitlab-ci-token -p ${CI_BUILD_TOKEN} ${CI_REGISTRY}; fi
+    - if [ -n "${CI_DOCKER_USER}" ]; then echo "Using provided credentials for authentication with docker registry"; docker login -u ${CI_DOCKER_USER} -p ${CI_DOCKER_PASSWORD} ${CI_REGISTRY}; else docker login -u gitlab-ci-token -p ${CI_JOB_TOKEN} ${CI_REGISTRY}; fi
     - mark_section_start clone-deps "Cloning dependencies"
     - make clone-deps
     - mark_section_end clone-deps
@@ -98,7 +98,7 @@ build-yangmodels:
       paths:
         - yang
   script:
-    - if [ -n "${CI_DOCKER_USER}" ]; then echo "Using provided credentials for authentication with docker registry"; docker login -u ${CI_DOCKER_USER} -p ${CI_DOCKER_PASSWORD} ${CI_REGISTRY}; else docker login -u gitlab-ci-token -p ${CI_BUILD_TOKEN} ${CI_REGISTRY}; fi
+    - if [ -n "${CI_DOCKER_USER}" ]; then echo "Using provided credentials for authentication with docker registry"; docker login -u ${CI_DOCKER_USER} -p ${CI_DOCKER_PASSWORD} ${CI_REGISTRY}; else docker login -u gitlab-ci-token -p ${CI_JOB_TOKEN} ${CI_REGISTRY}; fi
     - mark_section_start clone-yangmodels "Cloning yangmodels repository"
     - make clone-yangmodels
     - mark_section_end clone-yangmodels
