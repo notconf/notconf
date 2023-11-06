@@ -3,12 +3,12 @@
 # have Docker installed, or use Podman with the "alias docker=podman" set up. In
 # GitHub actions runner VM (ubuntu) both Podman and Docker are installed so we
 # set this variable to "podman" because we want to use it in CI.
-CONTAINER_RUNTIME?=docker
+export CONTAINER_RUNTIME?=docker
 
 # helper function to turn a string into lower case
 lc = $(subst A,a,$(subst B,b,$(subst C,c,$(subst D,d,$(subst E,e,$(subst F,f,$(subst G,g,$(subst H,h,$(subst I,i,$(subst J,j,$(subst K,k,$(subst L,l,$(subst M,m,$(subst N,n,$(subst O,o,$(subst P,p,$(subst Q,q,$(subst R,r,$(subst S,s,$(subst T,t,$(subst U,u,$(subst V,v,$(subst W,w,$(subst X,x,$(subst Y,y,$(subst Z,z,$1))))))))))))))))))))))))))
 ifneq ($(CI_REGISTRY),)
-IMAGE_PATH?=$(call lc,$(CI_REGISTRY)/$(CI_PROJECT_NAMESPACE)/notconf/)
+export IMAGE_PATH?=$(call lc,$(CI_REGISTRY)/$(CI_PROJECT_NAMESPACE)/notconf/)
 endif
 
 ifneq ($(CI_PIPELINE_ID),)
@@ -30,7 +30,7 @@ DOCKER_BUILD_CACHE_ARG?=--no-cache
 endif
 endif
 
-IMAGE_TAG?=$(PNS)
+export IMAGE_TAG?=$(PNS)
 
 # BuildKit speeds up the image builds by running independent stages in a
 # multi-stage Dockerfile concurrently. BuildKit is a breeze to use with Docker -
@@ -297,5 +297,11 @@ test-composed-notconf-yang:
 	$(MAKE) wait-healthy
 	$(CONTAINER_RUNTIME) run -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug netconf-console2 --port 830 --hello
 	$(CONTAINER_RUNTIME) run -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug netconf-console2 --port 830 --get -x /modules-state
+	set -e; for fixup in `find fixups -type f -name Makefile -printf "%d %P\n" | sort -n -r | awk '{ print $$2; }'`; do \
+		if [[ "$(YANG_PATH)" =~ ^$$(dirname $${fixup}).* ]] && make -C $$(dirname "fixups/$${fixup}") -n test >/dev/null 2>&1; then \
+			echo "Executing test in fixups/$${fixup}"; \
+			make -C $$(dirname "fixups/$${fixup}") test; \
+		fi \
+	done
 	$(MAKE) save-logs
 	$(MAKE) test-stop

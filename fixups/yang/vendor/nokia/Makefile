@@ -45,3 +45,21 @@ $(COMPOSE_PATH)/%.yang: $(COMPOSE_PATH)/strip/%.yang
 			touch $(COMPOSE_PATH)/install/$(@F); \
 		fi \
 	fi || true
+
+.PHONY: all test test-sysrepo test-netopeer
+
+test:
+	$(CONTAINER_RUNTIME) cp operational $(CNT_PREFIX):/yang-modules
+	$(CONTAINER_RUNTIME) exec $(CNT_PREFIX) /wait-operational-sync.sh
+	$(MAKE) test-sysrepo
+	$(MAKE) test-netopeer
+
+test-sysrepo:
+	$(CONTAINER_RUNTIME) cp -L test-sysrepo.py $(CNT_PREFIX):/
+	$(CONTAINER_RUNTIME) exec $(CNT_PREFIX) /test-sysrepo.py --sysrepo --path "/state/chassis[chassis-class='router'][chassis-number='1']/peq[peq-slot='12']/equipped-type" -n 500
+
+test-netopeer:
+	-$(CONTAINER_RUNTIME) rm -f $(CNT_PREFIX)-ncclient
+	$(CONTAINER_RUNTIME) create --rm --name $(CNT_PREFIX)-ncclient --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug /test-sysrepo.py --netopeer --path "/state/chassis[chassis-class='router'][chassis-number='1']/peq[peq-slot='12']/equipped-type" -n 500
+	$(CONTAINER_RUNTIME) cp -L test-sysrepo.py $(CNT_PREFIX)-ncclient:/
+	$(CONTAINER_RUNTIME) start -ai $(CNT_PREFIX)-ncclient
