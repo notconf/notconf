@@ -56,14 +56,14 @@ clone-or-update:
 	fi
 
 # These (git) tags pin the components to a specific version number
-LIBYANG_TAG=v2.1.55
-SYSREPO_TAG=v2.2.60
-LIBSSH_TAG=libssh-0.10.4
-LIBNETCONF2_TAG=v2.1.31
-NETOPEER2_TAG=v2.1.59
+LIBYANG_TAG=v2.1.111
+SYSREPO_TAG=v2.2.105
+LIBSSH_TAG=libssh-0.10.5
+LIBNETCONF2_TAG=v2.1.37
+NETOPEER2_TAG=v2.1.71
 # These versions pin the sysrepo-python and libyang-python PyPI packages
-SYSREPO_PYTHON_VERSION=1.4.0
-LIBYANG_PYTHON_VERSION=2.7.0
+SYSREPO_PYTHON_VERSION=1.6.0
+LIBYANG_PYTHON_VERSION=2.8.0
 clone-deps:
 	$(MAKE) clone-or-update REPOSITORY=https://github.com/CESNET/libyang.git BRANCH=$(LIBYANG_TAG)
 	$(MAKE) clone-or-update REPOSITORY=https://github.com/sysrepo/sysrepo.git BRANCH=$(SYSREPO_TAG)
