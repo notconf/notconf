@@ -86,7 +86,7 @@ def main():
 
     if ov.mean >= 1000:
         unit = "m"
-        scale = 1000_0000
+        scale = 1_000_000
     else:
         unit = "µ"
         scale = 1000
