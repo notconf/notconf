@@ -36,6 +36,7 @@ before_script:
   - *helper_mark_section
   - mark_section_start initialize Initializing
   - which docker xmlstarlet >/dev/null || (echo "Installing prerequisites..." && apt-get -y update && DEBIAN_FRONTEND=noninteractive apt-get install -qy apt-transport-https ca-certificates software-properties-common xmlstarlet; which docker || (echo "Installing docker..." && curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add - && apt-key fingerprint 0EBFCD88 && add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/debian $(lsb_release -cs) stable" && apt-get -y update && apt-get -qy install -qy docker-ce docker-ce-cli containerd.io))
+  - which pyang >/dev/null || (echo "Installing pyang..." && apt-get -y update && DEBIAN_FRONTEND=noninteractive apt-get install -qy python3-pip --no-install-recommends && pip3 install pyang)
   - mark_section_end initialize
 
 
