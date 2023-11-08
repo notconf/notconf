@@ -26,6 +26,7 @@ $(COMPOSE_PATH)/%.yang: %.yang
 test:
 	$(CONTAINER_RUNTIME) cp operational $(CNT_PREFIX):/yang-modules
 	$(CONTAINER_RUNTIME) exec $(CNT_PREFIX) /wait-operational-sync.sh
+	$(MAKE) -C ../../../../perftest build-container-image
 	$(MAKE) test-sysrepo
 	$(MAKE) test-netopeer-xpath
 	$(MAKE) test-netopeer-subtree
@@ -35,9 +36,7 @@ test-sysrepo:
 	$(CONTAINER_RUNTIME) exec $(CNT_PREFIX) /test-sysrepo.py --path "/state/chassis[chassis-class='router'][chassis-number='1']/peq[peq-slot='12']/equipped-type" -n 100
 
 test-netopeer-xpath:
-	$(CONTAINER_RUNTIME) cp ../../../../perftest/test-netconf $(CNT_PREFIX):/
-	$(CONTAINER_RUNTIME) exec $(CNT_PREFIX) /test-netconf -n 100 -get-data -datastore operational -filter-xpath "/state/chassis[chassis-class='router'][chassis-number='1']/peq[peq-slot='12']/equipped-type"
+	$(CONTAINER_RUNTIME) run -t --rm --network container:$(CNT_PREFIX) --name $(CNT_PREFIX)-test-netconf test-netconf -n 100 -get-data -datastore operational -filter-xpath "/state/chassis[chassis-class='router'][chassis-number='1']/peq[peq-slot='12']/equipped-type"
 
 test-netopeer-subtree:
-	$(CONTAINER_RUNTIME) cp ../../../../perftest/test-netconf $(CNT_PREFIX):/
-	$(CONTAINER_RUNTIME) exec $(CNT_PREFIX) /test-netconf -n 100 -get-data -datastore operational -filter-subtree "<state><chassis><chassis-class>router</chassis-class><chassis-number>1</chassis-number><peq><peq-slot>12</peq-slot><equipped-type/></peq></chassis></state>"
+	$(CONTAINER_RUNTIME) run -t --rm --network container:$(CNT_PREFIX) --name $(CNT_PREFIX)-test-netconf test-netconf -n 100 -get-data -datastore operational -filter-subtree "<state><chassis><chassis-class>router</chassis-class><chassis-number>1</chassis-number><peq><peq-slot>12</peq-slot><equipped-type/></peq></chassis></state>"
