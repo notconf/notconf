@@ -49,11 +49,14 @@ clone-or-update: BRANCH?=devel
 clone-or-update: DIR:=$(basename $(lastword $(subst /, ,$(REPOSITORY))))
 clone-or-update:
 	@mkdir -p src
-	if ! git clone -b $(BRANCH) $(REPOSITORY) src/$(DIR); then \
+	if ! git clone $(REPOSITORY) src/$(DIR); then \
 		cd src/$(DIR); \
 		git fetch origin; \
-		git checkout $(BRANCH); \
 	fi
+	cd src/$(DIR); \
+	git checkout $(BRANCH); \
+# Reset to origin branch if it exists, otherwise reset to commit hash \
+	git show-ref --verify refs/remotes/origin/$(BRANCH) 2>&1 >/dev/null && git reset --hard origin/$(BRANCH) || git reset --hard $(BRANCH); \
 
 # These (git) tags pin the components to a specific version number
 LIBYANG_TAG=v2.1.111
