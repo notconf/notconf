@@ -16,16 +16,17 @@ import (
 )
 
 var (
-	host       = flag.String("host", "localhost", "Hostname")
-	port       = flag.Int("port", 830, "Port")
-	username   = flag.String("username", "admin", "Username")
-	password   = flag.String("password", "admin", "Password")
-	n          = flag.Int("n", 10, "Number of times to repeat the request")
-	verbose    = flag.Bool("v", false, "Verbose")
-	getData    = flag.Bool("get-data", false, "Use <get-data> instead of <get-config>")
-	datastore  = flag.String("datastore", "running", "Datastore")
-	filter     = flag.String("filter", "", "Filter")
-	rawRpcFile = flag.String("raw-rpc", "", "Raw RPC file")
+	host          = flag.String("host", "localhost", "Hostname")
+	port          = flag.Int("port", 830, "Port")
+	username      = flag.String("username", "admin", "Username")
+	password      = flag.String("password", "admin", "Password")
+	n             = flag.Int("n", 10, "Number of times to repeat the request")
+	verbose       = flag.Bool("v", false, "Verbose")
+	getData       = flag.Bool("get-data", false, "Use <get-data> instead of <get-config>")
+	datastore     = flag.String("datastore", "running", "Datastore")
+	filterXpath   = flag.String("filter-xpath", "", "Filter XPath")
+	filterSubtree = flag.String("filter-subtree", "", "Filter Subtree")
+	rawRpcFile    = flag.String("raw-rpc", "", "Raw RPC file")
 )
 
 // OnlineVariance computes the sample variance incrementally using the Welford's algorithm
@@ -70,13 +71,16 @@ type GetDataReply struct {
 }
 
 // GetData is a helper function to send a <get-data> request to the server
-func GetData(session *netconf.Session, datastore string, filter string) (*string, error) {
+func GetData(session *netconf.Session, datastore string, filterXpath string, filterSubtree string) (*string, error) {
 	request := "<get-data xmlns='urn:ietf:params:xml:ns:yang:ietf-netconf-nmda'>"
 	if datastore != "" {
 		request += fmt.Sprintf("<datastore xmlns:ds='urn:ietf:params:xml:ns:yang:ietf-datastores'>ds:%s</datastore>", datastore)
 	}
-	if filter != "" {
-		request += fmt.Sprintf("<xpath-filter>%s</xpath-filter>", filter)
+	if filterXpath != "" {
+		request += fmt.Sprintf("<xpath-filter>%s</xpath-filter>", filterXpath)
+	}
+	if filterSubtree != "" {
+		request += fmt.Sprintf("<subtree-filter>%s</subtree-filter>", filterSubtree)
 	}
 	request += "</get-data>"
 	var reply GetDataReply
@@ -89,8 +93,12 @@ func GetData(session *netconf.Session, datastore string, filter string) (*string
 func main() {
 	flag.Parse()
 
-	if !*getData && *filter != "" {
-		log.Fatalf("filter can only be used with <get-data>")
+	if *getData {
+		if *filterXpath != "" && *filterSubtree != "" {
+			log.Fatalf("only one of filter-xpath and filter-subtree can be used")
+		}
+	} else if *filterXpath != "" || *filterSubtree != "" {
+		log.Fatalf("filters can only be used with <get-data>")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -128,7 +136,7 @@ func main() {
 		}
 	} else if *getData {
 		getter = func() (*string, error) {
-			return GetData(session, *datastore, *filter)
+			return GetData(session, *datastore, *filterXpath, *filterSubtree)
 		}
 	} else {
 		getter = func() (*string, error) {
