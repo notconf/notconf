@@ -26,15 +26,17 @@ $(COMPOSE_PATH)/%.yang: %.yang
 test:
 	$(CONTAINER_RUNTIME) cp operational $(CNT_PREFIX):/yang-modules
 	$(CONTAINER_RUNTIME) exec $(CNT_PREFIX) /wait-operational-sync.sh
+	$(MAKE) -C ../../../../perftest build-container-image
 	$(MAKE) test-sysrepo
-	$(MAKE) test-netopeer
+	$(MAKE) test-netopeer-xpath
+	$(MAKE) test-netopeer-subtree
 
 test-sysrepo:
-	$(CONTAINER_RUNTIME) cp test-sysrepo.py $(CNT_PREFIX):/
-	$(CONTAINER_RUNTIME) exec $(CNT_PREFIX) /test-sysrepo.py --sysrepo --path "/state/chassis[chassis-class='router'][chassis-number='1']/peq[peq-slot='12']/equipped-type" -n 500
+	$(CONTAINER_RUNTIME) cp ../../../../perftest/test-sysrepo.py $(CNT_PREFIX):/
+	$(CONTAINER_RUNTIME) exec $(CNT_PREFIX) /test-sysrepo.py --path "/state/chassis[chassis-class='router'][chassis-number='1']/peq[peq-slot='12']/equipped-type" -n 100
 
-test-netopeer:
-	-$(CONTAINER_RUNTIME) rm -f $(CNT_PREFIX)-ncclient
-	$(CONTAINER_RUNTIME) create --rm --name $(CNT_PREFIX)-ncclient --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug /test-sysrepo.py --netopeer --path "/state/chassis[chassis-class='router'][chassis-number='1']/peq[peq-slot='12']/equipped-type" -n 500
-	$(CONTAINER_RUNTIME) cp test-sysrepo.py $(CNT_PREFIX)-ncclient:/
-	$(CONTAINER_RUNTIME) start -ai $(CNT_PREFIX)-ncclient
+test-netopeer-xpath:
+	$(CONTAINER_RUNTIME) run -t --rm --network container:$(CNT_PREFIX) --name $(CNT_PREFIX)-test-netconf test-netconf -n 100 -get-data -datastore operational -filter-xpath "/state/chassis[chassis-class='router'][chassis-number='1']/peq[peq-slot='12']/equipped-type"
+
+test-netopeer-subtree:
+	$(CONTAINER_RUNTIME) run -t --rm --network container:$(CNT_PREFIX) --name $(CNT_PREFIX)-test-netconf test-netconf -n 100 -get-data -datastore operational -filter-subtree "<state><chassis><chassis-class>router</chassis-class><chassis-number>1</chassis-number><peq><peq-slot>12</peq-slot><equipped-type/></peq></chassis></state>"
