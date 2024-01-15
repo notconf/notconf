@@ -91,13 +91,11 @@ RUN apt-get update \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/* /root/.cache
 
-RUN adduser --system netconf \
- && adduser --system admin \
- && echo "netconf:netconf" | chpasswd \
- && echo "admin:admin" | chpasswd
-
 COPY disable-nacm.xml /
 RUN sysrepocfg --edit=disable-nacm.xml -d startup --module ietf-netconf-acm -v4
+
+COPY admin.xml /
+RUN sysrepocfg --edit=admin.xml -d startup --module ietf-netconf-server -v4
 
 COPY *.sh /
 COPY load-oper-data.py /
@@ -124,13 +122,11 @@ RUN apt-get update \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/* /root/.cache
 
-RUN adduser --system netconf \
- && adduser --system admin \
- && echo "netconf:netconf" | chpasswd \
- && echo "admin:admin" | chpasswd
-
 COPY disable-nacm.xml /
 RUN sysrepocfg --edit=disable-nacm.xml -d startup --module ietf-netconf-acm -v4
+
+COPY admin.xml /
+RUN sysrepocfg --edit=admin.xml -d startup --module ietf-netconf-server -v4
 
 COPY *.sh /
 COPY load-oper-data.py /
