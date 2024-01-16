@@ -15,6 +15,20 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
+// arrayNamespaces is a helper type to allow multiple namespace flags
+type arrayNamespaces []string
+
+func (i *arrayNamespaces) String() string {
+	return fmt.Sprintf("%v", *i)
+}
+
+func (i *arrayNamespaces) Set(value string) error {
+	*i = append(*i, value)
+	return nil
+}
+
+var namespaces arrayNamespaces
+
 var (
 	host          = flag.String("host", "localhost", "Hostname")
 	port          = flag.Int("port", 830, "Port")
@@ -77,7 +91,11 @@ func GetData(session *netconf.Session, datastore string, filterXpath string, fil
 		request += fmt.Sprintf("<datastore xmlns:ds='urn:ietf:params:xml:ns:yang:ietf-datastores'>ds:%s</datastore>", datastore)
 	}
 	if filterXpath != "" {
-		request += fmt.Sprintf("<xpath-filter>%s</xpath-filter>", filterXpath)
+		extraNamespaces := ""
+		for _, ns := range namespaces {
+			extraNamespaces += fmt.Sprintf(" xmlns:%s", ns)
+		}
+		request += fmt.Sprintf("<xpath-filter%s>%s</xpath-filter>", extraNamespaces, filterXpath)
 	}
 	if filterSubtree != "" {
 		request += fmt.Sprintf("<subtree-filter>%s</subtree-filter>", filterSubtree)
@@ -91,6 +109,7 @@ func GetData(session *netconf.Session, datastore string, filterXpath string, fil
 }
 
 func main() {
+	flag.Var(&namespaces, "namespace", "Namespace to use in the request (can be used multiple times)")
 	flag.Parse()
 
 	if *getData {

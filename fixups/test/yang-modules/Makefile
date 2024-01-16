@@ -10,10 +10,10 @@ test:
 
 test-sysrepo:
 	$(CONTAINER_RUNTIME) cp ../../../perftest/test-sysrepo.py $(CNT_PREFIX):/
-	$(CONTAINER_RUNTIME) exec $(CNT_PREFIX) /test-sysrepo.py --path /bob/state/great
+	$(CONTAINER_RUNTIME) exec $(CNT_PREFIX) /test-sysrepo.py --path /test:bob/state/great
 
 test-netopeer-xpath:
-	$(CONTAINER_RUNTIME) run -t --rm --network container:$(CNT_PREFIX) --name $(CNT_PREFIX)-test-netconf test-netconf -n 100 -get-data -datastore operational -filter-xpath /bob/state/great
+	$(CONTAINER_RUNTIME) run -t --rm --network container:$(CNT_PREFIX) --name $(CNT_PREFIX)-test-netconf test-netconf -n 100 -get-data -datastore operational -namespace test=\'urn:notconf:test\' -filter-xpath /test:bob/state/great
 
 test-netopeer-subtree:
-	$(CONTAINER_RUNTIME) run -t --rm --network container:$(CNT_PREFIX) --name $(CNT_PREFIX)-test-netconf test-netconf -n 100 -get-data -datastore operational -filter-subtree "<bob><state><great/></state></bob>"
+	$(CONTAINER_RUNTIME) run -t --rm --network container:$(CNT_PREFIX) --name $(CNT_PREFIX)-test-netconf test-netconf -n 100 -get-data -datastore operational -filter-subtree "<bob xmlns='urn:notconf:test'><state><great/></state></bob>"

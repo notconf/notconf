@@ -33,10 +33,10 @@ test:
 
 test-sysrepo:
 	$(CONTAINER_RUNTIME) cp ../../../../perftest/test-sysrepo.py $(CNT_PREFIX):/
-	$(CONTAINER_RUNTIME) exec $(CNT_PREFIX) /test-sysrepo.py --path "/state/chassis[chassis-class='router'][chassis-number='1']/peq[peq-slot='12']/equipped-type" -n 100
+	$(CONTAINER_RUNTIME) exec $(CNT_PREFIX) /test-sysrepo.py --path "/nokia-state:state/chassis[chassis-class='router'][chassis-number='1']/peq[peq-slot='12']/equipped-type" -n 100
 
 test-netopeer-xpath:
-	$(CONTAINER_RUNTIME) run -t --rm --network container:$(CNT_PREFIX) --name $(CNT_PREFIX)-test-netconf test-netconf -n 100 -get-data -datastore operational -filter-xpath "/state/chassis[chassis-class='router'][chassis-number='1']/peq[peq-slot='12']/equipped-type"
+	$(CONTAINER_RUNTIME) run -t --rm --network container:$(CNT_PREFIX) --name $(CNT_PREFIX)-test-netconf test-netconf -n 100 -get-data -datastore operational -namespace state=\'urn:nokia.com:sros:ns:yang:sr:state\' -filter-xpath "/state:state/chassis[chassis-class='router'][chassis-number='1']/peq[peq-slot='12']/equipped-type"
 
 test-netopeer-subtree:
-	$(CONTAINER_RUNTIME) run -t --rm --network container:$(CNT_PREFIX) --name $(CNT_PREFIX)-test-netconf test-netconf -n 100 -get-data -datastore operational -filter-subtree "<state><chassis><chassis-class>router</chassis-class><chassis-number>1</chassis-number><peq><peq-slot>12</peq-slot><equipped-type/></peq></chassis></state>"
+	$(CONTAINER_RUNTIME) run -t --rm --network container:$(CNT_PREFIX) --name $(CNT_PREFIX)-test-netconf test-netconf -n 100 -get-data -datastore operational -filter-subtree "<state xmlns='urn:nokia.com:sros:ns:yang:sr:state'><chassis><chassis-class>router</chassis-class><chassis-number>1</chassis-number><peq><peq-slot>12</peq-slot><equipped-type/></peq></chassis></state>"
