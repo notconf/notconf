@@ -6,7 +6,7 @@ ARG COMPOSE_PATH
 
 COPY ${COMPOSE_PATH} /notconf
 
-RUN YANG_MODULES_DIR=/notconf /install-yang-modules.sh
+RUN YANG_MODULES_DIR=/notconf FEATURES_FILE=enable-features.txt /install-yang-modules.sh
 RUN mkdir /notconf-init \
  && cp -av /notconf/operational /notconf/startup /notconf-init || true
 

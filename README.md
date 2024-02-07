@@ -43,9 +43,15 @@ will load all YANG modules found in the `/yang-modules` directory inside the
 container. Therefore the quickest way to use custom modules is to bind mount a
 host directory to the `/yang-modules` directory in the container.
 
+Yang modules could also contain optional features that, by default, are disabled. 
+At startup the container will look for the file `/yang-modules/enable-feature.csv`
+to determine if some features should be enabled. Each row of the file should start
+with a module name followed by comma and the name of a feature to enable.
+Note that the last line of the file MUST terminate with a newline.
+
 ``` shell
 # start the container and bind mount the `test` directory to `/yang-modules`
-❯ docker run -d --rm --name notconf-test -v $(pwd)/test:/yang-modules notconf
+❯ docker run -d --rm --name notconf-test -v $(pwd)/test/yang-modules:/yang-modules notconf
 # verify the NETCONF server supports the test YANG module
 # with netconf-console2 installed on your local machine:
 ❯ netconf-console2 --host $(docker inspect notconf-test --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}') --port 830 --get /modules-state
@@ -78,7 +84,7 @@ then copies the results to a clean image.
 
 ``` shell
 # build the custom notconf-test image
-❯ docker build -f Dockerfile.yang -t notconf-test --build-arg COMPOSE_PATH=test .
+❯ docker build -f Dockerfile.yang -t notconf-dzs --build-arg COMPOSE_PATH=dzs/yang-modules .
 Sending build context to Docker daemon
 Step 1/9 : ARG IMAGE_PATH
 Step 2/9 : ARG IMAGE_TAG=latest

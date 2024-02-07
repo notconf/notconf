@@ -102,6 +102,7 @@ COPY load-oper-data.py /
 RUN mkdir /yang-modules
 
 ENV YANG_MODULES_DIR=/yang-modules
+ENV FEATURES_FILE=enable-features.txt
 EXPOSE 830
 
 CMD /run.sh
@@ -134,6 +135,7 @@ RUN mkdir /yang-modules
 
 ENV EDITOR=vim
 ENV YANG_MODULES_DIR=/yang-modules
+ENV FEATURES_FILE=enable-features.txt
 EXPOSE 830
 
 CMD /run.sh

@@ -3,4 +3,7 @@ automatically inserted into the sysrepo startup datastore by the startup script
 -->
 <bob xmlns="urn:notconf:test">
 	<startup>Robert!</startup>
+	<alice>
+		<startup>super</startup>
+	</alice>
 </bob>

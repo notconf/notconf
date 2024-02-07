@@ -13,7 +13,10 @@ set -e
 # Skip submodules as they will automatically be installed with their parent
 for f in ${MODULES}; do
 	n=$((n+1))
-	if head -n1 $f | grep ^submodule > /dev/null 2>&1; then echo "[$n/$total] Skipping submodule $f"; continue; fi
+	if grep -m1 -P "^\s*(module|submodule)" $f | grep submodule > /dev/null 2>&1; then 
+		echo "[$n/$total] Skipping submodule $f"; 
+		continue; 
+	fi	
 	echo "[$n/$total] Preparing to install module $f"
 	install_modules+=($f)
 done
@@ -29,3 +32,28 @@ install_modules=( "${install_modules[@]/#/--install }" )
 # Install all modules in a single batch (recent-ish feature
 # https://github.com/CESNET/netopeer2/issues/1337#issuecomment-1403225980)
 time sysrepoctl --search-dirs ${YANG_MODULES_DIR} ${install_modules[@]} -v3
+
+# Enable features
+# Read csv file with feature list
+if [ -f ${YANG_MODULES_DIR}/${FEATURES_FILE} ]; then
+	prev_module=""
+	feature_enable=""
+	echo "Reading features to enable from file ${YANG_MODULES_DIR}/${FEATURES_FILE}"
+
+	while IFS=, read -r module_name feature_name; do    
+		if [ "$prev_module" != "$module_name" ]; then
+			if [ ! -z "$prev_module" ]; then
+				sysrepoctl --change $prev_module $feature_enable -v3
+			fi
+			prev_module=$module_name
+			feature_enable=""
+		fi
+		feature_enable="$feature_enable --enable-feature $feature_name"
+	done < ${YANG_MODULES_DIR}/${FEATURES_FILE}
+	if [ ! -z "$prev_module" ]; then
+		sysrepoctl --change $prev_module $feature_enable -v3
+	fi	
+else
+	echo "Feature file ${FEATURES_FILE} not present"
+fi
+
