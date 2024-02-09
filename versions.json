@@ -1,4 +1,13 @@
 {
+    "2024-02-09-devel": {
+        "libyang": "b34bd8a91570e287f9e6b0dae444677d226d2c32",
+        "sysrepo": "02c2565a285daf31ae0243dfe46a23c527a1896f",
+        "libnetconf2": "5d712ac5d84665014ef6fae830b9eba0b06a037f",
+        "netopeer2": "512dff7c714ac47105a00b0972b703526770ba35",
+        "libssh": "stable-0.10",
+        "libyang-python": "2.8.0",
+        "sysrepo-python": "1.6.0"
+    },
     "2024-01-16-devel": {
         "libyang": "fc4dbd923e044006c93df020590a1e5a8656c09e",
         "sysrepo": "5a184830be003233a7fffb4e84967fc6677af3d8",
