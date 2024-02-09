@@ -58,23 +58,26 @@ clone-or-update:
 # Reset to origin branch if it exists, otherwise reset to commit hash \
 	git show-ref --verify refs/remotes/origin/$(BRANCH) 2>&1 >/dev/null && git reset --hard origin/$(BRANCH) || git reset --hard $(BRANCH); \
 
-# These (git) tags pin the components to a specific version number
-LIBYANG_TAG=v2.1.111
-SYSREPO_TAG=v2.2.105
-LIBSSH_TAG=libssh-0.10.5
-LIBNETCONF2_TAG=v2.1.37
-NETOPEER2_TAG=v2.1.71
-# These versions pin the sysrepo-python and libyang-python PyPI packages
-SYSREPO_PYTHON_VERSION=1.6.0
-LIBYANG_PYTHON_VERSION=2.8.0
+# The sysrepo / netopeer2 projects appear to use a git workflow where the
+# 'master' branch is stable and the 'devel' branch is the integration branch
+# where new features and fixes first get introduced or merged. The pace of
+# changes in the development branch is quite high which makes it difficult to
+# keep up with new features (and bugs) so we now have the option of pinning a
+# specific version (hash) of the development branches.
+# These are defined in the versions.json file. The top dictionary key is the
+# branch name or our custom pinning name. The value is a dictionary with the
+# keys being the project names and the values being the git commit hash or
+# branch name. If the branch name is not defined for a project, the default is
+# to use the branch name from the top level dictionary.
+PIN_NAME?=2024-01-16
 clone-deps:
-	$(MAKE) clone-or-update REPOSITORY=https://github.com/CESNET/libyang.git BRANCH=$(LIBYANG_TAG)
-	$(MAKE) clone-or-update REPOSITORY=https://github.com/sysrepo/sysrepo.git BRANCH=$(SYSREPO_TAG)
-	$(MAKE) clone-or-update REPOSITORY=http://git.libssh.org/projects/libssh.git BRANCH=$(LIBSSH_TAG)
-	$(MAKE) clone-or-update REPOSITORY=https://github.com/CESNET/libnetconf2.git BRANCH=$(LIBNETCONF2_TAG)
-	$(MAKE) clone-or-update REPOSITORY=https://github.com/CESNET/netopeer2.git BRANCH=$(NETOPEER2_TAG)
+	$(MAKE) clone-or-update REPOSITORY=https://github.com/CESNET/libyang.git BRANCH=$(shell jq --raw-output '."$(PIN_NAME)"."libyang" // "$(PIN_NAME)"' versions.json)
+	$(MAKE) clone-or-update REPOSITORY=https://github.com/sysrepo/sysrepo.git BRANCH=$(shell jq --raw-output '."$(PIN_NAME)"."sysrepo" // "$(PIN_NAME)"' versions.json)
+	$(MAKE) clone-or-update REPOSITORY=http://git.libssh.org/projects/libssh.git BRANCH=$(shell jq --raw-output '."$(PIN_NAME)"."libssh" // "$(PIN_NAME)"' versions.json)
+	$(MAKE) clone-or-update REPOSITORY=https://github.com/CESNET/libnetconf2.git BRANCH=$(shell jq --raw-output '."$(PIN_NAME)"."libnetconf2" // "$(PIN_NAME)"' versions.json)
+	$(MAKE) clone-or-update REPOSITORY=https://github.com/CESNET/netopeer2.git BRANCH=$(shell jq --raw-output '."$(PIN_NAME)"."netopeer2" // "$(PIN_NAME)"' versions.json)
 
-CONTAINER_BUILD_ARGS=--build-arg SYSREPO_PYTHON_VERSION=$(SYSREPO_PYTHON_VERSION) --build-arg LIBYANG_PYTHON_VERSION=$(LIBYANG_PYTHON_VERSION)
+CONTAINER_BUILD_ARGS=--build-arg SYSREPO_PYTHON_VERSION=$(shell jq --raw-output '."$(PIN_NAME)"."sysrepo-python" // "$(PIN_NAME)"' versions.json) --build-arg LIBYANG_PYTHON_VERSION=$(shell jq --raw-output '."$(PIN_NAME)"."libyang-python" // "$(PIN_NAME)"' versions.json)
 build:
 # We explicitly build the first 'build-tools-source' stage (where the
 # dependencies are installed and source code is pulled), which allows us to

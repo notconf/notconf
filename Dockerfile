@@ -13,6 +13,10 @@ RUN apt-get update \
  && apt-get install -qy zlib1g-dev libssl-dev \
  # libnetconf2 now supports PAM
  && apt-get install -qy libpam0g-dev \
+ # libnetconf2 (devel) now requires curl
+ && apt-get install -qy libcurl4-openssl-dev \
+ # netopeer2 (devel) now requires pkg-config
+ && apt-get install -qy pkg-config \
  # common sense tools for debugging
  && apt-get install -qy less neovim git
 
@@ -79,6 +83,7 @@ RUN ldconfig
 
 RUN apt-get update \
  && apt-get install -qy libssl-dev \
+ && apt-get install -qy libcurl4 \
  && apt-get install -qy python3 inotify-tools python3-pip libpcre2-dev \
  && pip3 install sysrepo==${SYSREPO_PYTHON_VERSION} libyang==${LIBYANG_PYTHON_VERSION} \
  && apt-get -qy remove python3-pip libpcre2-dev \
@@ -86,13 +91,11 @@ RUN apt-get update \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/* /root/.cache
 
-RUN adduser --system netconf \
- && adduser --system admin \
- && echo "netconf:netconf" | chpasswd \
- && echo "admin:admin" | chpasswd
-
 COPY disable-nacm.xml /
 RUN sysrepocfg --edit=disable-nacm.xml -d startup --module ietf-netconf-acm -v4
+
+COPY admin.xml /
+RUN sysrepocfg --edit=admin.xml -d startup --module ietf-netconf-server -v4
 
 COPY *.sh /
 COPY load-oper-data.py /
@@ -119,13 +122,11 @@ RUN apt-get update \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/* /root/.cache
 
-RUN adduser --system netconf \
- && adduser --system admin \
- && echo "netconf:netconf" | chpasswd \
- && echo "admin:admin" | chpasswd
-
 COPY disable-nacm.xml /
 RUN sysrepocfg --edit=disable-nacm.xml -d startup --module ietf-netconf-acm -v4
+
+COPY admin.xml /
+RUN sysrepocfg --edit=admin.xml -d startup --module ietf-netconf-server -v4
 
 COPY *.sh /
 COPY load-oper-data.py /
