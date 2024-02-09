@@ -18,10 +18,10 @@
         "sysrepo-python": "1.6.0"
     },
     "2024-01-16": {
-        "libyang": "v2.1.111",
-        "sysrepo": "v2.2.105",
-        "libnetconf2": "v2.1.37",
-        "netopeer2": "v2.1.71",
+        "libyang": "v2.1.148",
+        "sysrepo": "v2.2.150",
+        "libnetconf2": "v3.0.8",
+        "netopeer2": "v2.2.13",
         "libssh": "stable-0.10",
         "libyang-python": "2.8.0",
         "sysrepo-python": "1.6.0"
