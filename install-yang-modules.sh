@@ -40,7 +40,7 @@ if [ -f ${YANG_MODULES_DIR}/${FEATURES_FILE} ]; then
 	feature_enable=""
 	echo "Reading features to enable from file ${YANG_MODULES_DIR}/${FEATURES_FILE}"
 
-	while IFS=, read -r module_name feature_name; do    
+	while IFS=, read -r module_name feature_name || [ -n "$module_name$feature_name" ]; do    
 		if [ "$prev_module" != "$module_name" ]; then
 			if [ ! -z "$prev_module" ]; then
 				sysrepoctl --change $prev_module $feature_enable -v3
