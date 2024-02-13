@@ -13,7 +13,7 @@ set -e
 # Skip submodules as they will automatically be installed with their parent
 for f in ${MODULES}; do
 	n=$((n+1))
-	if grep -m1 -P "^\s*(module|submodule)" $f | grep submodule > /dev/null 2>&1; then 
+	if grep -m1 -P "^\s*submodule" $f > /dev/null 2>&1; then 
 		echo "[$n/$total] Skipping submodule $f"; 
 		continue; 
 	fi	
