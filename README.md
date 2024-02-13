@@ -84,7 +84,7 @@ then copies the results to a clean image.
 
 ``` shell
 # build the custom notconf-test image
-❯ docker build -f Dockerfile.yang -t notconf-dzs --build-arg COMPOSE_PATH=dzs/yang-modules .
+❯ docker build -f Dockerfile.yang -t notconf-test --build-arg COMPOSE_PATH=test/yang-modules .
 Sending build context to Docker daemon
 Step 1/9 : ARG IMAGE_PATH
 Step 2/9 : ARG IMAGE_TAG=latest

@@ -35,10 +35,10 @@ time sysrepoctl --search-dirs ${YANG_MODULES_DIR} ${install_modules[@]} -v3
 
 # Enable features
 # Read csv file with feature list
-if [ -f ${YANG_MODULES_DIR}/${FEATURES_FILE} ]; then
+if [ -f "${YANG_MODULES_DIR}/enable-features.csv" ]; then
 	prev_module=""
 	feature_enable=""
-	echo "Reading features to enable from file ${YANG_MODULES_DIR}/${FEATURES_FILE}"
+	echo "Reading features to enable from file ${YANG_MODULES_DIR}/enable-features.csv"
 
 	while IFS=, read -r module_name feature_name || [ -n "$module_name$feature_name" ]; do    
 		if [ "$prev_module" != "$module_name" ]; then
@@ -49,11 +49,11 @@ if [ -f ${YANG_MODULES_DIR}/${FEATURES_FILE} ]; then
 			feature_enable=""
 		fi
 		feature_enable="$feature_enable --enable-feature $feature_name"
-	done < ${YANG_MODULES_DIR}/${FEATURES_FILE}
+	done < ${YANG_MODULES_DIR}/enable-features.csv
 	if [ ! -z "$prev_module" ]; then
 		sysrepoctl --change $prev_module $feature_enable -v3
 	fi	
 else
-	echo "Feature file ${FEATURES_FILE} not present"
+	echo 'Feature file "enable-features.csv" not present'
 fi
 
