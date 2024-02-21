@@ -44,10 +44,10 @@ container. Therefore the quickest way to use custom modules is to bind mount a
 host directory to the `/yang-modules` directory in the container.
 
 Yang modules could also contain optional features that, by default, are disabled. 
-At startup the container will look for the file `/yang-modules/enable-feature.csv`
+At startup the container will look for the file `/yang-modules/enable-features.csv`
 to determine if some features should be enabled. Each row of the file should start
-with a module name followed by comma and the name of a feature to enable.
-Note that the last line of the file MUST terminate with a newline.
+with a module name followed by comma and the name of a feature to enable,
+one pair per line.
 
 ``` shell
 # start the container and bind mount the `test` directory to `/yang-modules`
