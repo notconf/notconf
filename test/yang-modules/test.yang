@@ -3,6 +3,11 @@ module test {
   namespace "urn:notconf:test";
   prefix test;
 
+  feature alice-feature {
+    description
+      "This feature enables alice container";
+  }
+
   container bob {
     leaf startup {
       type string;
@@ -13,6 +18,13 @@ module test {
     container state {
       config false;
       leaf great {
+        type string;
+      }
+    }
+
+    container alice {
+      if-feature alice-feature;
+      leaf startup {
         type string;
       }
     }
