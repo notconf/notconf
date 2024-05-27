@@ -2,7 +2,7 @@
 # directories in /src. This allows us to cache this stage until the base image
 # version changes or we bump the versions of the installed packages.
 
-FROM ubuntu:latest AS build-tools-source
+FROM ubuntu:jammy AS build-tools-source
 ARG DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update \
@@ -70,7 +70,7 @@ RUN mkdir build && \
 # not required for netopeer or sysrepo, but the current operational data loading
 # script is written in Python, so we have to install it.
 
-FROM ubuntu:latest as notconf-release
+FROM ubuntu:jammy as notconf-release
 LABEL org.opencontainers.image.source="https://github.com/mzagozen/notconf"
 LABEL org.opencontainers.image.description="This is the release build of notconf. Start the container with the device YANG modules mounted to /yang-modules to simulate the NETCONF management interface."
 ARG DEBIAN_FRONTEND=noninteractive
