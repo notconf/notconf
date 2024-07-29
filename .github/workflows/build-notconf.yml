@@ -6,6 +6,11 @@ env:
   IMAGE_PATH: ghcr.io/notconf/notconf/
   CONTAINER_RUNTIME: podman
 
+permissions:
+  contents: read
+  # explicit write permissions for allowing writes to organization packages
+  packages: write
+
 jobs:
   build-notconf-base:
     runs-on: ubuntu-latest
