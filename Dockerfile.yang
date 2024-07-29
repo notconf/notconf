@@ -14,4 +14,4 @@ FROM ${IMAGE_PATH}notconf:${IMAGE_TAG} AS notconf
 COPY --from=notconf-install /etc/sysrepo /etc/sysrepo
 COPY --from=notconf-install /notconf-init/ /yang-modules/
 
-LABEL org.opencontainers.image.source="https://github.com/mzagozen/notconf"
+LABEL org.opencontainers.image.source="https://github.com/notconf/notconf"

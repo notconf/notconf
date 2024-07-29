@@ -56,7 +56,7 @@ one pair per line.
 # with netconf-console2 installed on your local machine:
 ❯ netconf-console2 --host $(docker inspect notconf-test --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}') --port 830 --get /modules-state
 # or run netconf-console2 from the notconf:debug image:
-❯ docker run -i --network container:notconf-test ghcr.io/mzagozen/notconf/notconf:debug netconf-console2 --port 830 --get /modules-state
+❯ docker run -i --network container:notconf-test ghcr.io/notconf/notconf/notconf:debug netconf-console2 --port 830 --get /modules-state
 ...
     <module>
       <name>test</name>
@@ -99,7 +99,7 @@ Successfully tagged notconf-test:latest
 
 # start the container with the composed image and verify the test.yang module is present
 ❯ docker run -d --rm --name notconf-test -v $(pwd)/test:/yang-modules notconf
-❯ docker run -i --rm --network container:notconf-test ghcr.io/mzagozen/notconf/notconf:debug netconf-console2 --port 830 --get -x '/modules-state/module[name="test"]'
+❯ docker run -i --rm --network container:notconf-test ghcr.io/notconf/notconf/notconf:debug netconf-console2 --port 830 --get -x '/modules-state/module[name="test"]'
 <?xml version='1.0' encoding='UTF-8'?>
 <data xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
   <modules-state xmlns="urn:ietf:params:xml:ns:yang:ietf-yang-library">
@@ -115,7 +115,7 @@ Successfully tagged notconf-test:latest
 ```
 
 Note: `Dockerfile.yang` has two additional optional build arguments:
-- `IMAGE_PATH`: prefix to the base notconf container image, like `ghcr.io/mzagozen/notconf/notconf`, defaults to empty string
+- `IMAGE_PATH`: prefix to the base notconf container image, like `ghcr.io/notconf/notconf/notconf`, defaults to empty string
 - `IMAGE_TAG`: suffix to the base notconf container image, defaults to `latest`
 
 ### Compose a custom notconf image with vendor YANG modules
@@ -165,7 +165,7 @@ The script will block until the process is complete.
 # start the container and bind mount the `test` directory to `/yang-modules`
 ❯ docker run -d --rm --name notconf-test -v $(pwd)/test/yang-modules:/yang-modules notconf
 # verify operational data in test/yang-modules/operational/test-oper.xml is present
-❯ docker run -i --network container:notconf-test ghcr.io/mzagozen/notconf/notconf:debug netconf-console2 --port 830 --get -x /bob
+❯ docker run -i --network container:notconf-test ghcr.io/notconf/notconf/notconf:debug netconf-console2 --port 830 --get -x /bob
 <?xml version='1.0' encoding='UTF-8'?>
 <data xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
   <bob xmlns="urn:notconf:test">
