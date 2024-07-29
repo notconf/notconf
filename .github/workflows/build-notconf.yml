@@ -3,7 +3,7 @@ name: build-notconf
 on: [push, pull_request]
 
 env:
-  IMAGE_PATH: ghcr.io/notconf/notconf/
+  IMAGE_PATH: ghcr.io/notconf/
   CONTAINER_RUNTIME: podman
 
 permissions:
