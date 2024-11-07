@@ -5,6 +5,7 @@ on: [push, pull_request]
 env:
   IMAGE_PATH: ghcr.io/notconf/
   CONTAINER_RUNTIME: podman
+  PLATFORM: --platform linux/amd64,linux/arm64
 
 permissions:
   contents: read
