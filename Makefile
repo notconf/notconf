@@ -76,14 +76,15 @@ clone-deps:
 	$(MAKE) clone-or-update REPOSITORY=https://github.com/CESNET/libnetconf2.git BRANCH=$(shell jq --raw-output '."$(PIN_NAME)"."libnetconf2" // "$(PIN_NAME)"' versions.json)
 	$(MAKE) clone-or-update REPOSITORY=https://github.com/CESNET/netopeer2.git BRANCH=$(shell jq --raw-output '."$(PIN_NAME)"."netopeer2" // "$(PIN_NAME)"' versions.json)
 
+PLATFORM?=--platform linux/amd64
 CONTAINER_BUILD_ARGS=--build-arg SYSREPO_PYTHON_VERSION=$(shell jq --raw-output '."$(PIN_NAME)"."sysrepo-python" // "$(PIN_NAME)"' versions.json) --build-arg LIBYANG_PYTHON_VERSION=$(shell jq --raw-output '."$(PIN_NAME)"."libyang-python" // "$(PIN_NAME)"' versions.json)
 build:
 # We explicitly build the first 'build-tools-source' stage (where the
 # dependencies are installed and source code is pulled), which allows us to
 # control caching of it through the DOCKER_BUILD_CACHE_ARG.
-	$(CONTAINER_RUNTIME) build --target build-tools-source $(DOCKER_BUILD_CACHE_ARG) .
-	$(CONTAINER_RUNTIME) build --target notconf-release -t $(IMAGE_PATH)notconf:$(IMAGE_TAG) --build-arg BUILD_TYPE=Release $(CONTAINER_BUILD_ARGS) .
-	$(CONTAINER_RUNTIME) build --target notconf-debug -t $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug --build-arg BUILD_TYPE=Debug $(CONTAINER_BUILD_ARGS) .
+	$(CONTAINER_RUNTIME) build $(PLATFORM) --target build-tools-source -t notconf:build-source-tools $(DOCKER_BUILD_CACHE_ARG) .
+	$(CONTAINER_RUNTIME) build $(PLATFORM) --target notconf-release -t $(IMAGE_PATH)notconf:$(IMAGE_TAG) --build-arg BUILD_TYPE=Release $(CONTAINER_BUILD_ARGS) .
+	$(CONTAINER_RUNTIME) build $(PLATFORM) --target notconf-debug -t $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug --build-arg BUILD_TYPE=Debug $(CONTAINER_BUILD_ARGS) .
 
 tag-release:
 	$(CONTAINER_RUNTIME) tag $(IMAGE_PATH)notconf:$(IMAGE_TAG) $(IMAGE_PATH)notconf:latest
@@ -288,7 +289,7 @@ compose-notconf-yang:
 		echo "Copying files directly from $(YANG_PATH) without fixups"; \
 		cp -av $(YANG_PATH)/. $(COMPOSE_PATH); \
 	fi
-	$(CONTAINER_RUNTIME) build -f Dockerfile.yang -t $(IMAGE_PATH)notconf-$(COMPOSE_IMAGE_NAME):$(COMPOSE_IMAGE_TAG)-$(PNS) \
+	$(CONTAINER_RUNTIME) build $(PLATFORM) -f Dockerfile.yang -t $(IMAGE_PATH)notconf-$(COMPOSE_IMAGE_NAME):$(COMPOSE_IMAGE_TAG)-$(PNS) \
 		--build-arg COMPOSE_PATH=$(COMPOSE_PATH) --build-arg IMAGE_PATH=$(IMAGE_PATH) --build-arg IMAGE_TAG=$(IMAGE_TAG) $(DOCKER_BUILD_CACHE_ARG) \
 		--label org.opencontainers.image.description="This image contains the base notconf installation (sysrepo+netopeer2) with the following YANG modules pre-installed: $(COMPOSE_IMAGE_NAME)/$(COMPOSE_IMAGE_TAG)" .
 	echo $(IMAGE_PATH)notconf-$(COMPOSE_IMAGE_NAME):$(COMPOSE_IMAGE_TAG)-$(PNS) >> composed-notconf.txt
