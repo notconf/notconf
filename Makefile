@@ -76,15 +76,16 @@ clone-deps:
 	$(MAKE) clone-or-update REPOSITORY=https://github.com/CESNET/libnetconf2.git BRANCH=$(shell jq --raw-output '."$(PIN_NAME)"."libnetconf2" // "$(PIN_NAME)"' versions.json)
 	$(MAKE) clone-or-update REPOSITORY=https://github.com/CESNET/netopeer2.git BRANCH=$(shell jq --raw-output '."$(PIN_NAME)"."netopeer2" // "$(PIN_NAME)"' versions.json)
 
-PLATFORM?=--platform linux/amd64
+BUILD_PLATFORM?=--platform linux/amd64
+RUN_PLATFORM?=--platform linux/amd64
 CONTAINER_BUILD_ARGS=--build-arg SYSREPO_PYTHON_VERSION=$(shell jq --raw-output '."$(PIN_NAME)"."sysrepo-python" // "$(PIN_NAME)"' versions.json) --build-arg LIBYANG_PYTHON_VERSION=$(shell jq --raw-output '."$(PIN_NAME)"."libyang-python" // "$(PIN_NAME)"' versions.json)
 build:
 # We explicitly build the first 'build-tools-source' stage (where the
 # dependencies are installed and source code is pulled), which allows us to
 # control caching of it through the DOCKER_BUILD_CACHE_ARG.
-	$(CONTAINER_RUNTIME) build $(PLATFORM) --target build-tools-source -t notconf:build-source-tools $(DOCKER_BUILD_CACHE_ARG) .
-	$(CONTAINER_RUNTIME) build $(PLATFORM) --target notconf-release -t $(IMAGE_PATH)notconf:$(IMAGE_TAG) --build-arg BUILD_TYPE=Release $(CONTAINER_BUILD_ARGS) .
-	$(CONTAINER_RUNTIME) build $(PLATFORM) --target notconf-debug -t $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug --build-arg BUILD_TYPE=Debug $(CONTAINER_BUILD_ARGS) .
+	$(CONTAINER_RUNTIME) build $(BUILD_PLATFORM) --target build-tools-source -t notconf:build-source-tools $(DOCKER_BUILD_CACHE_ARG) .
+	$(CONTAINER_RUNTIME) build $(BUILD_PLATFORM) --target notconf-release -t $(IMAGE_PATH)notconf:$(IMAGE_TAG) --build-arg BUILD_TYPE=Release $(CONTAINER_BUILD_ARGS) .
+	$(CONTAINER_RUNTIME) build $(BUILD_PLATFORM) --target notconf-debug -t $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug --build-arg BUILD_TYPE=Debug $(CONTAINER_BUILD_ARGS) .
 
 tag-release:
 	$(CONTAINER_RUNTIME) tag $(IMAGE_PATH)notconf:$(IMAGE_TAG) $(IMAGE_PATH)notconf:latest
@@ -131,16 +132,16 @@ test-notconf-mount:
 # because the path does not exist on the host, only in the test container. As a
 # workaround we first create the container and then copy the YANG module to the
 # target location. The following command would probably work on your local machine:
-#	$(CONTAINER_RUNTIME) run -d --name $(CNT_PREFIX) -v $$(pwd)/test/yang-modules:/yang-modules $(IMAGE_PATH)notconf:$(IMAGE_TAG)
-	$(CONTAINER_RUNTIME) create --log-driver json-file --name $(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)
+#	$(CONTAINER_RUNTIME) run $(RUN_PLATFORM) -d --name $(CNT_PREFIX) -v $$(pwd)/test/yang-modules:/yang-modules $(IMAGE_PATH)notconf:$(IMAGE_TAG)
+	$(CONTAINER_RUNTIME) create $(RUN_PLATFORM) --log-driver json-file --name $(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)
 	$(CONTAINER_RUNTIME) cp test/yang-modules $(CNT_PREFIX):/
 	$(CONTAINER_RUNTIME) start $(CNT_PREFIX)
 	$(MAKE) wait-healthy
-	$(CONTAINER_RUNTIME) run -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug netconf-console2 --port 830 --get-config -x /bob/startup | grep Robert
-	$(CONTAINER_RUNTIME) run -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug netconf-console2 --port 830 --ns test=urn:notconf:test --set /test:bob/test:bert=Robert
-	$(CONTAINER_RUNTIME) run -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug netconf-console2 --port 830 --get-config -x /bob/bert | grep Robert
-	$(CONTAINER_RUNTIME) run -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug netconf-console2 --port 830 --get -x /bob/state/great | grep success
-	$(CONTAINER_RUNTIME) run -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug netconf-console2 --port 830 --get-config -x /bob/alice | grep super
+	$(CONTAINER_RUNTIME) run $(RUN_PLATFORM) -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug netconf-console2 --port 830 --get-config -x /bob/startup | grep Robert
+	$(CONTAINER_RUNTIME) run $(RUN_PLATFORM) -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug netconf-console2 --port 830 --ns test=urn:notconf:test --set /test:bob/test:bert=Robert
+	$(CONTAINER_RUNTIME) run $(RUN_PLATFORM) -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug netconf-console2 --port 830 --get-config -x /bob/bert | grep Robert
+	$(CONTAINER_RUNTIME) run $(RUN_PLATFORM) -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug netconf-console2 --port 830 --get -x /bob/state/great | grep success
+	$(CONTAINER_RUNTIME) run $(RUN_PLATFORM) -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug netconf-console2 --port 830 --get-config -x /bob/alice | grep super
 	$(MAKE) save-logs
 	$(MAKE) test-stop
 
@@ -163,7 +164,7 @@ save-logs:
 		echo "== Collecting $(CONTAINER_RUNTIME) logs from $${c}"; \
 		$(CONTAINER_RUNTIME) logs --timestamps $${c} > container-logs/$(CONTAINER_RUNTIME)_$${c}.log 2>&1; \
 		$(CONTAINER_RUNTIME) inspect $${c} > container-logs/$(CONTAINER_RUNTIME)_$${c}_inspect.log; \
-		$(CONTAINER_RUNTIME) run -i --rm --network container:$${c} $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug netconf-console2 --port 830 --hello > container-logs/$(CONTAINER_RUNTIME)_$${c}_netconf.log || true; \
+		$(CONTAINER_RUNTIME) run $(RUN_PLATFORM) -i --rm --network container:$${c} $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug netconf-console2 --port 830 --hello > container-logs/$(CONTAINER_RUNTIME)_$${c}_netconf.log || true; \
 	done
 
 SHELL=/bin/bash
@@ -289,7 +290,7 @@ compose-notconf-yang:
 		echo "Copying files directly from $(YANG_PATH) without fixups"; \
 		cp -av $(YANG_PATH)/. $(COMPOSE_PATH); \
 	fi
-	$(CONTAINER_RUNTIME) build $(PLATFORM) -f Dockerfile.yang -t $(IMAGE_PATH)notconf-$(COMPOSE_IMAGE_NAME):$(COMPOSE_IMAGE_TAG)-$(PNS) \
+	$(CONTAINER_RUNTIME) build $(RUN_PLATFORM) -f Dockerfile.yang -t $(IMAGE_PATH)notconf-$(COMPOSE_IMAGE_NAME):$(COMPOSE_IMAGE_TAG)-$(PNS) \
 		--build-arg COMPOSE_PATH=$(COMPOSE_PATH) --build-arg IMAGE_PATH=$(IMAGE_PATH) --build-arg IMAGE_TAG=$(IMAGE_TAG) $(DOCKER_BUILD_CACHE_ARG) \
 		--label org.opencontainers.image.description="This image contains the base notconf installation (sysrepo+netopeer2) with the following YANG modules pre-installed: $(COMPOSE_IMAGE_NAME)/$(COMPOSE_IMAGE_TAG)" .
 	echo $(IMAGE_PATH)notconf-$(COMPOSE_IMAGE_NAME):$(COMPOSE_IMAGE_TAG)-$(PNS) >> composed-notconf.txt
@@ -300,10 +301,10 @@ test-compose-yang: compose-notconf-yang
 test-composed-notconf-yang: export CNT_PREFIX=test-yang-$(COMPOSE_IMAGE_NAME)-$(COMPOSE_IMAGE_TAG)-$(PNS)
 test-composed-notconf-yang:
 	-$(CONTAINER_RUNTIME) rm -f $(CNT_PREFIX)
-	$(CONTAINER_RUNTIME) run -d --log-driver json-file --name $(CNT_PREFIX) $(IMAGE_PATH)notconf-$(COMPOSE_IMAGE_NAME):$(COMPOSE_IMAGE_TAG)-$(PNS)
+	$(CONTAINER_RUNTIME) run $(RUN_PLATFORM) -d --log-driver json-file --name $(CNT_PREFIX) $(IMAGE_PATH)notconf-$(COMPOSE_IMAGE_NAME):$(COMPOSE_IMAGE_TAG)-$(PNS)
 	$(MAKE) wait-healthy
-	$(CONTAINER_RUNTIME) run -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug netconf-console2 --port 830 --hello
-	$(CONTAINER_RUNTIME) run -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug netconf-console2 --port 830 --get -x /modules-state
+	$(CONTAINER_RUNTIME) run $(RUN_PLATFORM) -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug netconf-console2 --port 830 --hello
+	$(CONTAINER_RUNTIME) run $(RUN_PLATFORM) -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug netconf-console2 --port 830 --get -x /modules-state
 	set -e; for fixup in `find fixups -type f -name Makefile -printf "%d %P\n" | sort -n -r | awk '{ print $$2; }'`; do \
 		if [[ "$(YANG_PATH)" =~ ^$$(dirname $${fixup}).* ]] && make -C $$(dirname "fixups/$${fixup}") -n test >/dev/null 2>&1; then \
 			echo "Executing test in fixups/$${fixup}"; \
