@@ -23,6 +23,11 @@ jobs:
         podman create --help | grep log-driver
         podman info
 
+    - name: Set up environment for multi-platform builds
+      run: |
+        sudo podman run --rm --privileged multiarch/qemu-user-static --reset -p yes
+        podman run --rm -t --platform linux/arm64 arm64v8/ubuntu uname -m
+
     - uses: actions/checkout@v4
 
     - name: Cache deps
