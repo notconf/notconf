@@ -66,10 +66,10 @@ jobs:
         make push-release
 
     - name: Store container logs in artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: container-logs
+        name: container-logs-notconf
         path: container-logs/
 
   build-yangmodels:
@@ -131,9 +131,14 @@ jobs:
         make tag-release-composed-notconf
         make push-release-composed-notconf
 
+    - name: Compute artifact name and store in output
+      id: artifact-name
+      run: |
+        YANG_PATH=${{ matrix.path }} make print-COMPOSE_IMAGE_NAME print-COMPOSE_IMAGE_TAG >> $GITHUB_OUTPUT
+
     - name: Store container logs in artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: container-logs
+        name: container-logs-${{ steps.artifact-name.outputs.COMPOSE_IMAGE_NAME }}-${{ steps.artifact-name.outputs.COMPOSE_IMAGE_TAG }}
         path: container-logs/
