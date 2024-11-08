@@ -312,3 +312,7 @@ test-composed-notconf-yang:
 	done
 	$(MAKE) save-logs
 	$(MAKE) test-stop
+
+# Print the value of a variable, for debugging / CI
+print-%:
+	@echo $*=$($*)
