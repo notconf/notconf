@@ -69,7 +69,7 @@ clone-or-update:
 # keys being the project names and the values being the git commit hash or
 # branch name. If the branch name is not defined for a project, the default is
 # to use the branch name from the top level dictionary.
-PIN_NAME?=2024-01-16
+PIN_NAME?=2024-09-13
 clone-deps:
 	$(MAKE) clone-or-update REPOSITORY=https://github.com/CESNET/libyang.git BRANCH=$(shell jq --raw-output '."$(PIN_NAME)"."libyang" // "$(PIN_NAME)"' versions.json)
 	$(MAKE) clone-or-update REPOSITORY=https://github.com/sysrepo/sysrepo.git BRANCH=$(shell jq --raw-output '."$(PIN_NAME)"."sysrepo" // "$(PIN_NAME)"' versions.json)
