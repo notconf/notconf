@@ -2,7 +2,7 @@
 # directories in /src. This allows us to cache this stage until the base image
 # version changes or we bump the versions of the installed packages.
 
-FROM ubuntu:jammy AS build-tools-source
+FROM ubuntu:noble AS build-tools-source
 ARG DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update \
@@ -70,7 +70,7 @@ RUN mkdir build && \
 # not required for netopeer or sysrepo, but the current operational data loading
 # script is written in Python, so we have to install it.
 
-FROM ubuntu:jammy as notconf-release
+FROM ubuntu:noble AS notconf-release
 LABEL org.opencontainers.image.source="https://github.com/notconf/notconf"
 LABEL org.opencontainers.image.description="This is the release build of notconf. Start the container with the device YANG modules mounted to /yang-modules to simulate the NETCONF management interface."
 ARG DEBIAN_FRONTEND=noninteractive
@@ -107,7 +107,7 @@ EXPOSE 830
 CMD /run.sh
 HEALTHCHECK --start-period=30s --interval=5s CMD grep -e 'Listening on .* for SSH connections' /log/netopeer.log
 
-FROM builder as notconf-debug
+FROM builder AS notconf-debug
 LABEL org.opencontainers.image.source="https://github.com/notconf/notconf"
 LABEL org.opencontainers.image.description="This is the debug build of notconf - the server (netopeer2) and its dependencies (sysrepo, libnetconf2, libyang) are built with the debug flag set. The image also includes a compiler (clang) and debugging tools (gdb and valgrind). Start the container with the device YANG modules mounted to /yang-modules to simulate the NETCONF management interface."
 ARG SYSREPO_PYTHON_VERSION
