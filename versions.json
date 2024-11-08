@@ -25,5 +25,14 @@
         "libssh": "stable-0.10",
         "libyang-python": "2.8.0",
         "sysrepo-python": "1.6.0"
+    },
+    "2024-09-13": {
+        "libyang": "v3.4.2",
+        "sysrepo": "v2.11.7",
+        "libnetconf2": "v3.5.1",
+        "netopeer2": "v2.2.31",
+        "libssh": "stable-0.10",
+        "libyang-python": "3.0.1",
+        "sysrepo-python": "1.7.2"
     }
 }
