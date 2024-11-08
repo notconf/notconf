@@ -29,41 +29,31 @@ FROM build-tools-source AS builder
 ARG BUILD_TYPE
 
 WORKDIR /src/libyang
-RUN mkdir build && \
-  cd build && \
-  cmake -D CMAKE_BUILD_TYPE:String=${BUILD_TYPE} .. && \
-  make -j && \
-  make install
+RUN cmake -B build -D CMAKE_BUILD_TYPE:String=${BUILD_TYPE} && \
+  make -C build -j && \
+  make -C build install
 
 WORKDIR /src/sysrepo
-RUN mkdir build && \
-  cd build && \
-  # Explicitly set REPO_PATH for Debug builds
-  cmake -D CMAKE_BUILD_TYPE:String=${BUILD_TYPE} -D REPO_PATH=/etc/sysrepo .. && \
-  make -j && \
-  make install
+# Explicitly set REPO_PATH for Debug builds
+RUN cmake -B build -D CMAKE_BUILD_TYPE:String=${BUILD_TYPE} -D REPO_PATH=/etc/sysrepo && \
+  make -C build -j && \
+  make -C build install
 
 WORKDIR /src/libssh
-RUN mkdir build && \
-  cd build && \
-  cmake -D CMAKE_BUILD_TYPE:String=${BUILD_TYPE} .. && \
-  make -j && \
-  make install
+RUN cmake -B build -D CMAKE_BUILD_TYPE:String=${BUILD_TYPE} && \
+  make -C build -j && \
+  make -C build install
 
 WORKDIR /src/libnetconf2
-RUN mkdir build && \
-  cd build && \
-  cmake -D CMAKE_BUILD_TYPE:String=${BUILD_TYPE} .. && \
-  make -j && \
-  make install
+RUN cmake -B build -D CMAKE_BUILD_TYPE:String=${BUILD_TYPE} && \
+  make -C build -j && \
+  make -C build install
 
 WORKDIR /src/netopeer2
-RUN mkdir build && \
-  cd build && \
-  cmake -D CMAKE_BUILD_TYPE:String=${BUILD_TYPE} .. && \
-  make -j && \
+RUN cmake -B build -D CMAKE_BUILD_TYPE:String=${BUILD_TYPE} && \
+  make -C build -j && \
   ldconfig && \
-  make install
+  make -C build install
 
 # The notconf-release stage starts from an "empty" image and installs only the
 # bare minimum required to run the notconf applications. In general Python is
