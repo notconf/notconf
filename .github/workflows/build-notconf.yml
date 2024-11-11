@@ -76,21 +76,20 @@ jobs:
 
   build-notconf-base-arm64:
     runs-on: macos-15
+    env:
+      CONTAINER_RUNTIME: docker
 
     steps:
-    - name: Install podman
+    - name: Install colima
       run: |
-        brew tap cfergeau/crc
-        brew install vfkit
-        brew install podman
-        podman machine init
-        podman machine start
+        brew install colima docker
+        colima start
 
-    - name: Show podman info
+    - name: Show docker info
       run: |
-        podman info --format '{{ .Host.LogDriver }}'
-        podman create --help | grep log-driver
-        podman info
+        docker info --format '{{ .Host.LogDriver }}'
+        docker create --help | grep log-driver
+        docker info
 
     - uses: actions/checkout@v4
 
