@@ -82,39 +82,41 @@ RUN_PLATFORM?=--platform linux/amd64
 # BUILD_PLATFORM is 1 we build a tagged image. Otherwise (podman AND multi-arch
 # build) we build a manifest list.
 ifeq ($(CONTAINER_RUNTIME),docker)
-TAG_OR_MANIFEST=--tag
+BUILD_TAG_OR_MANIFEST=--tag
+PUSH_TAG_OR_MANIFEST=push
 else ifneq ($(words $(subst ,, $(BUILD_PLATFORM))),1)
-TAG_OR_MANIFEST=--manifest
+BUILD_TAG_OR_MANIFEST=--manifest
+PUSH_TAG_OR_MANIFEST=manifest push --all
 endif
 CONTAINER_BUILD_ARGS=--build-arg SYSREPO_PYTHON_VERSION=$(shell jq --raw-output '."$(PIN_NAME)"."sysrepo-python" // "$(PIN_NAME)"' versions.json) --build-arg LIBYANG_PYTHON_VERSION=$(shell jq --raw-output '."$(PIN_NAME)"."libyang-python" // "$(PIN_NAME)"' versions.json)
 build:
 # We explicitly build the first 'build-tools-source' stage (where the
 # dependencies are installed and source code is pulled), which allows us to
 # control caching of it through the DOCKER_BUILD_CACHE_ARG.
-	$(CONTAINER_RUNTIME) build $(BUILD_PLATFORM) --target build-tools-source -t notconf:build-source-tools $(DOCKER_BUILD_CACHE_ARG) .
-	$(CONTAINER_RUNTIME) build $(BUILD_PLATFORM) --target notconf-release -t $(IMAGE_PATH)notconf:$(IMAGE_TAG) --build-arg BUILD_TYPE=Release $(CONTAINER_BUILD_ARGS) .
-	$(CONTAINER_RUNTIME) build $(BUILD_PLATFORM) --target notconf-debug -t $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug --build-arg BUILD_TYPE=Debug $(CONTAINER_BUILD_ARGS) .
+	$(CONTAINER_RUNTIME) build $(BUILD_PLATFORM) --target build-tools-source $(BUILD_TAG_OR_MANIFEST) notconf:build-source-tools $(DOCKER_BUILD_CACHE_ARG) .
+	$(CONTAINER_RUNTIME) build $(BUILD_PLATFORM) --target notconf-release $(BUILD_TAG_OR_MANIFEST) $(IMAGE_PATH)notconf:$(IMAGE_TAG) --build-arg BUILD_TYPE=Release $(CONTAINER_BUILD_ARGS) .
+	$(CONTAINER_RUNTIME) build $(BUILD_PLATFORM) --target notconf-debug $(BUILD_TAG_OR_MANIFEST) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug --build-arg BUILD_TYPE=Debug $(CONTAINER_BUILD_ARGS) .
 
 tag-release:
 	$(CONTAINER_RUNTIME) tag $(IMAGE_PATH)notconf:$(IMAGE_TAG) $(IMAGE_PATH)notconf:latest
 	$(CONTAINER_RUNTIME) tag $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug $(IMAGE_PATH)notconf:debug
 
 push-release:
-	$(CONTAINER_RUNTIME) push $(IMAGE_PATH)notconf:debug
-	$(CONTAINER_RUNTIME) push $(IMAGE_PATH)notconf:latest
+	$(CONTAINER_RUNTIME) $(PUSH_TAG_OR_MANIFEST) $(IMAGE_PATH)notconf:debug
+	$(CONTAINER_RUNTIME) $(PUSH_TAG_OR_MANIFEST) $(IMAGE_PATH)notconf:latest
 
 push:
-	$(CONTAINER_RUNTIME) push $(IMAGE_PATH)notconf:$(IMAGE_TAG)
-	$(CONTAINER_RUNTIME) push $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug
+	$(CONTAINER_RUNTIME) $(PUSH_TAG_OR_MANIFEST) $(IMAGE_PATH)notconf:$(IMAGE_TAG)
+	$(CONTAINER_RUNTIME) $(PUSH_TAG_OR_MANIFEST) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug
 
 tag-release-composed-notconf: composed-notconf.txt
 	for tag in $$(uniq $<); do release_tag=$$(echo $${tag} | sed 's/-$(PNS)$$//'); $(CONTAINER_RUNTIME) tag $${tag} $${release_tag}; done
 
 push-release-composed-notconf: composed-notconf.txt
-	for release_tag in $$(sed 's/-$(PNS)$$//g' $< | uniq); do $(CONTAINER_RUNTIME) push $${release_tag}; done
+	for release_tag in $$(sed 's/-$(PNS)$$//g' $< | uniq); do $(CONTAINER_RUNTIME) $(PUSH_TAG_OR_MANIFEST) $${release_tag}; done
 
 push-composed-notconf: composed-notconf.txt
-	for tag in $$(uniq $<); do $(CONTAINER_RUNTIME) push $${tag}; done
+	for tag in $$(uniq $<); do $(CONTAINER_RUNTIME) $(PUSH_TAG_OR_MANIFEST) $${tag}; done
 
 test:
 	$(MAKE) test-notconf-mount
