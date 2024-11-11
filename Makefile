@@ -78,6 +78,14 @@ clone-deps:
 
 BUILD_PLATFORM?=--platform linux/amd64
 RUN_PLATFORM?=--platform linux/amd64
+# If we're building on docker or if the number of listed platforms in
+# BUILD_PLATFORM is 1 we build a tagged image. Otherwise (podman AND multi-arch
+# build) we build a manifest list.
+ifeq ($(CONTAINER_RUNTIME),docker)
+TAG_OR_MANIFEST=--tag
+else ifneq ($(words $(subst ,, $(BUILD_PLATFORM))),1)
+TAG_OR_MANIFEST=--manifest
+endif
 CONTAINER_BUILD_ARGS=--build-arg SYSREPO_PYTHON_VERSION=$(shell jq --raw-output '."$(PIN_NAME)"."sysrepo-python" // "$(PIN_NAME)"' versions.json) --build-arg LIBYANG_PYTHON_VERSION=$(shell jq --raw-output '."$(PIN_NAME)"."libyang-python" // "$(PIN_NAME)"' versions.json)
 build:
 # We explicitly build the first 'build-tools-source' stage (where the
