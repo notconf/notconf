@@ -83,10 +83,8 @@ RUN_PLATFORM?=--platform linux/amd64
 # build) we build a manifest list.
 ifeq ($(CONTAINER_RUNTIME),docker)
 BUILD_TAG_OR_MANIFEST=--tag
-PUSH_TAG_OR_MANIFEST=push
 else ifneq ($(words $(subst ,, $(BUILD_PLATFORM))),1)
 BUILD_TAG_OR_MANIFEST=--manifest
-PUSH_TAG_OR_MANIFEST=manifest push --all
 endif
 CONTAINER_BUILD_ARGS=--build-arg SYSREPO_PYTHON_VERSION=$(shell jq --raw-output '."$(PIN_NAME)"."sysrepo-python" // "$(PIN_NAME)"' versions.json) --build-arg LIBYANG_PYTHON_VERSION=$(shell jq --raw-output '."$(PIN_NAME)"."libyang-python" // "$(PIN_NAME)"' versions.json)
 build:
@@ -102,21 +100,44 @@ tag-release:
 	$(CONTAINER_RUNTIME) tag $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug $(IMAGE_PATH)notconf:debug
 
 push-release:
-	$(CONTAINER_RUNTIME) $(PUSH_TAG_OR_MANIFEST) $(IMAGE_PATH)notconf:debug
-	$(CONTAINER_RUNTIME) $(PUSH_TAG_OR_MANIFEST) $(IMAGE_PATH)notconf:latest
+ifeq ($(BUILD_TAG_OR_MANIFEST),--tag)
+	$(CONTAINER_RUNTIME) push $(IMAGE_PATH)notconf:debug
+	$(CONTAINER_RUNTIME) push $(IMAGE_PATH)notconf:latest
+else
+	podman manifest push --all $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug docker://$(IMAGE_PATH)notconf:debug
+	podman manifest push --all $(IMAGE_PATH)notconf:$(IMAGE_TAG) docker://$(IMAGE_PATH)notconf:latest
+endif
 
 push:
-	$(CONTAINER_RUNTIME) $(PUSH_TAG_OR_MANIFEST) $(IMAGE_PATH)notconf:$(IMAGE_TAG)
-	$(CONTAINER_RUNTIME) $(PUSH_TAG_OR_MANIFEST) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug
+ifeq ($(BUILD_TAG_OR_MANIFEST),--tag)
+	$(CONTAINER_RUNTIME) push $(IMAGE_PATH)notconf:$(IMAGE_TAG)
+	$(CONTAINER_RUNTIME) push $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug
+else
+	podman manifest push --all $(IMAGE_PATH)notconf:$(IMAGE_TAG) docker://$(IMAGE_PATH)notconf:$(IMAGE_TAG)
+	podman manifest push --all $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug docker://$(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug
+endif
 
 tag-release-composed-notconf: composed-notconf.txt
 	for tag in $$(uniq $<); do release_tag=$$(echo $${tag} | sed 's/-$(PNS)$$//'); $(CONTAINER_RUNTIME) tag $${tag} $${release_tag}; done
 
 push-release-composed-notconf: composed-notconf.txt
-	for release_tag in $$(sed 's/-$(PNS)$$//g' $< | uniq); do $(CONTAINER_RUNTIME) $(PUSH_TAG_OR_MANIFEST) $${release_tag}; done
+	for tag in $$(uniq $<); do \
+		release_tag=$$(echo $${tag} | sed 's/-$(PNS)$$//'); \
+		if [ "$(BUILD_TAG_OR_MANIFEST)" == "--tag" ]; then \
+			$(CONTAINER_RUNTIME) push $${release_tag}; \
+		else \
+			podman manifest push --all $${tag} docker://$${release_tag}; \
+		fi \
+	done
 
 push-composed-notconf: composed-notconf.txt
-	for tag in $$(uniq $<); do $(CONTAINER_RUNTIME) $(PUSH_TAG_OR_MANIFEST) $${tag}; done
+	for tag in $$(uniq $<); do \
+		if [ "$(BUILD_TAG_OR_MANIFEST)" == "--tag" ]; then \
+			$(CONTAINER_RUNTIME) push $${tag}; \
+		else \
+			podman manifest push --all $${tag} docker://$${tag}; \
+		fi \
+	done
 
 test:
 	$(MAKE) test-notconf-mount
