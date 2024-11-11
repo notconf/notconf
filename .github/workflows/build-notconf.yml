@@ -13,6 +13,7 @@ permissions:
 
 jobs:
   build-notconf-base-amd64:
+    if: false
     runs-on: ubuntu-24.04
 
     steps:
@@ -79,6 +80,8 @@ jobs:
     steps:
     - name: Install podman
       run: |
+        brew tap cfergeau/crc
+        brew install vfkit
         brew install podman
         podman machine init
         podman machine start
