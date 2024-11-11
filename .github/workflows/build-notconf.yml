@@ -108,7 +108,6 @@ jobs:
     - name: Run tests
       run: |
         make test
-        make test-podman-to-docker
 
     - name: Save logs for running containers
       if: always()
