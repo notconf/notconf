@@ -12,8 +12,8 @@ permissions:
   packages: write
 
 jobs:
-  build-notconf-base:
-    runs-on: ubuntu-latest
+  build-notconf-base-amd64:
+    runs-on: ubuntu-24.04
 
     steps:
     - name: Show podman info
@@ -57,20 +57,84 @@ jobs:
 
     - name: Push pipeline container images
       run: |
-        make push
+        make push-arch
 
     - name: Tag and push release container images
       if: ${{ github.ref_name == 'main' }}
       run: |
-        make tag-release
-        make push-release
+        make tag-release-arch
+        make push-release-arch
 
     - name: Store container logs in artifact
       uses: actions/upload-artifact@v4
       if: always()
       with:
         name: container-logs-notconf
-        path: container-logs/
+        path: container-logs-amd64/
+
+  build-notconf-base-arm64:
+    runs-on: macos-15
+
+    steps:
+    - name: Install podman
+      run: |
+        brew install podman
+
+    - name: Show podman info
+      run: |
+        podman info --format '{{ .Host.LogDriver }}'
+        podman create --help | grep log-driver
+        podman info
+
+    - uses: actions/checkout@v4
+
+    - name: Cache deps
+      uses: actions/cache@v4
+      with:
+        path: src
+        key: src-${{ hashFiles('Makefile') }}
+
+    - name: Update deps
+      run: make clone-deps
+
+    - name: Build container images
+      run: make build
+
+    - name: Run tests
+      run: |
+        make test
+        make test-podman-to-docker
+
+    - name: Save logs for running containers
+      if: always()
+      # After a successful test run there should be no containers left in the
+      # GitHub runner (a runner is an isolated VM). Any leftover containers are
+      # a result of a test failing so we should get the logs!
+      run: CNT_PREFIX= make save-logs
+
+    - name: Log in to the container registry
+      uses: redhat-actions/podman-login@v1
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Push pipeline container images
+      run: |
+        make push-arch
+
+    - name: Tag and push release container images
+      if: ${{ github.ref_name == 'main' }}
+      run: |
+        make tag-release-arch
+        make push-release-arch
+
+    - name: Store container logs in artifact
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: container-logs-notconf
+        path: container-logs-arm64/
 
   build-yangmodels:
     runs-on: ubuntu-latest

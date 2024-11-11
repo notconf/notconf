@@ -90,13 +90,25 @@ tag-release:
 	$(CONTAINER_RUNTIME) tag $(IMAGE_PATH)notconf:$(IMAGE_TAG) $(IMAGE_PATH)notconf:latest
 	$(CONTAINER_RUNTIME) tag $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug $(IMAGE_PATH)notconf:debug
 
+tag-release-arch:
+	$(CONTAINER_RUNTIME) tag $(IMAGE_PATH)notconf:$(IMAGE_TAG) $(IMAGE_PATH)notconf:latest-$(shell uname -m)
+	$(CONTAINER_RUNTIME) tag $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug-$(shell uname -m)
+
 push-release:
 	$(CONTAINER_RUNTIME) push $(IMAGE_PATH)notconf:debug
 	$(CONTAINER_RUNTIME) push $(IMAGE_PATH)notconf:latest
 
+push-release-arch:
+	$(CONTAINER_RUNTIME) push $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug-$(shell uname -m)
+	$(CONTAINER_RUNTIME) push $(IMAGE_PATH)notconf:latest-$(shell uname -m)
+
 push:
 	$(CONTAINER_RUNTIME) push $(IMAGE_PATH)notconf:$(IMAGE_TAG)
 	$(CONTAINER_RUNTIME) push $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug
+
+push-arch:
+	$(CONTAINER_RUNTIME) push $(IMAGE_PATH)notconf:$(IMAGE_TAG)-$(shell uname -m)
+	$(CONTAINER_RUNTIME) push $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug-$(shell uname -m)
 
 tag-release-composed-notconf: composed-notconf.txt
 	for tag in $$(uniq $<); do release_tag=$$(echo $${tag} | sed 's/-$(PNS)$$//'); $(CONTAINER_RUNTIME) tag $${tag} $${release_tag}; done
