@@ -79,6 +79,8 @@ jobs:
     - name: Install podman
       run: |
         brew install podman
+        podman machine init
+        podman machine start
 
     - name: Show podman info
       run: |
