@@ -42,6 +42,17 @@ jobs:
     - name: Build container images
       run: make build
 
+    - name: Log in to the container registry
+      uses: redhat-actions/podman-login@v1
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Push pipeline container images
+      run: |
+        make push
+
     - name: Run tests
       run: |
         make test
@@ -60,17 +71,6 @@ jobs:
       # GitHub runner (a runner is an isolated VM). Any leftover containers are
       # a result of a test failing so we should get the logs!
       run: CNT_PREFIX= make save-logs
-
-    - name: Log in to the container registry
-      uses: redhat-actions/podman-login@v1
-      with:
-        registry: ghcr.io
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Push pipeline container images
-      run: |
-        make push
 
     - name: Tag and push release container images
       if: ${{ github.ref_name == 'main' }}
