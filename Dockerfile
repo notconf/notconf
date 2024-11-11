@@ -75,6 +75,8 @@ RUN apt-get update \
  && apt-get install -qy libssl-dev \
  && apt-get install -qy libcurl4 \
  && apt-get install -qy python3 inotify-tools python3-pip libpcre2-dev \
+# Allow pip to "break" the distro Python for the sake of the sysrepo and libyang Python bindings
+ && find /usr/lib/python* -name EXTERNALLY-MANAGED -delete \
  && pip3 install sysrepo==${SYSREPO_PYTHON_VERSION} libyang==${LIBYANG_PYTHON_VERSION} \
  && apt-get -qy remove python3-pip libpcre2-dev \
  && apt-get -qy autoremove \
@@ -105,6 +107,8 @@ ARG LIBYANG_PYTHON_VERSION
 
 RUN apt-get update \
  && apt-get install -qy inotify-tools python3-pip \
+# Allow pip to "break" the distro Python for the sake of the sysrepo and libyang Python bindings
+ && find /usr/lib/python* -name EXTERNALLY-MANAGED -delete \
  && pip3 install netconf-console2 \
  && pip3 install sysrepo==${SYSREPO_PYTHON_VERSION} libyang==${LIBYANG_PYTHON_VERSION} \
  && apt-get -qy remove python3-pip \
