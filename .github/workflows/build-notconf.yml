@@ -57,6 +57,7 @@ jobs:
 
     - name: Push pipeline container images
       run: |
+        make tag-arch
         make push-arch
 
     - name: Tag and push release container images
