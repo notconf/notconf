@@ -73,7 +73,6 @@ PIN_NAME?=2024-09-13
 clone-deps:
 	$(MAKE) clone-or-update REPOSITORY=https://github.com/CESNET/libyang.git BRANCH=$(shell jq --raw-output '."$(PIN_NAME)"."libyang" // "$(PIN_NAME)"' versions.json)
 	$(MAKE) clone-or-update REPOSITORY=https://github.com/sysrepo/sysrepo.git BRANCH=$(shell jq --raw-output '."$(PIN_NAME)"."sysrepo" // "$(PIN_NAME)"' versions.json)
-	$(MAKE) clone-or-update REPOSITORY=http://git.libssh.org/projects/libssh.git BRANCH=$(shell jq --raw-output '."$(PIN_NAME)"."libssh" // "$(PIN_NAME)"' versions.json)
 	$(MAKE) clone-or-update REPOSITORY=https://github.com/CESNET/libnetconf2.git BRANCH=$(shell jq --raw-output '."$(PIN_NAME)"."libnetconf2" // "$(PIN_NAME)"' versions.json)
 	$(MAKE) clone-or-update REPOSITORY=https://github.com/CESNET/netopeer2.git BRANCH=$(shell jq --raw-output '."$(PIN_NAME)"."netopeer2" // "$(PIN_NAME)"' versions.json)
 

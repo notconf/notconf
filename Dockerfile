@@ -6,11 +6,9 @@ FROM ubuntu:noble AS build-tools-source
 ARG DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update \
- && apt-get install -qy ca-certificates cmake libpcre2-dev clang \
+ && apt-get install -qy ca-certificates cmake libpcre2-dev libssh-dev clang \
  # required for testing sysrepo
  && apt-get install -qy libcmocka-dev valgrind \
- # libssh dependencies
- && apt-get install -qy zlib1g-dev libssl-dev \
  # libnetconf2 now supports PAM
  && apt-get install -qy libpam0g-dev \
  # libnetconf2 (devel) now requires curl
@@ -36,11 +34,6 @@ RUN cmake -B build -D CMAKE_BUILD_TYPE:String=${BUILD_TYPE} && \
 WORKDIR /src/sysrepo
 # Explicitly set REPO_PATH for Debug builds
 RUN cmake -B build -D CMAKE_BUILD_TYPE:String=${BUILD_TYPE} -D REPO_PATH=/etc/sysrepo && \
-  make -C build -j && \
-  make -C build install
-
-WORKDIR /src/libssh
-RUN cmake -B build -D CMAKE_BUILD_TYPE:String=${BUILD_TYPE} && \
   make -C build -j && \
   make -C build install
 
