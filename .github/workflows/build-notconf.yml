@@ -13,9 +13,15 @@ permissions:
 
 jobs:
   build-notconf-base:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: [x86_64, aarch64]
+    runs-on: ${{ matrix.arch == 'x86_64' && 'ubuntu-latest' || 'self-hosted' }}
 
     steps:
+    - name: Set up environment
+      run: echo "ARCH=${{ matrix.arch }}" >> $GITHUB_ENV
+
     - name: Show podman info
       run: |
         podman info --format '{{ .Host.LogDriver }}'
@@ -69,11 +75,10 @@ jobs:
       uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: container-logs-notconf
+        name: container-logs-notconf-${{ matrix.arch }}
         path: container-logs/
 
   build-yangmodels:
-    runs-on: ubuntu-latest
     strategy:
       matrix:
         path: [yang/vendor/nokia/7x50_YangModels/latest_sros_21.10,
@@ -81,9 +86,14 @@ jobs:
               yang/vendor/juniper/21.1/21.1R1/junos,
               yang/vendor/cisco/xr/762,
               yang/vendor/cisco/xr/771]
+        arch: [x86_64, aarch64]
+    runs-on: ${{ matrix.arch == 'x86_64' && 'ubuntu-latest' || 'self-hosted' }}
     needs: build-notconf-base
 
     steps:
+    - name: Set up environment
+      run: echo "ARCH=${{ matrix.arch }}" >> $GITHUB_ENV
+
     - name: Show podman info
       run: |
         podman info --format '{{ .Host.LogDriver }}'
