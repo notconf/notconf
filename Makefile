@@ -30,7 +30,16 @@ DOCKER_BUILD_CACHE_ARG?=--no-cache
 endif
 endif
 
+# Include the architecture (x86_64 or aarch64) in the image tag if it is set. We
+# use this in CI to build and push images for multiple architectures, which are
+# then combined in a manifest list.
+ifdef ARCH
+export IMAGE_TAG?=$(PNS)-$(ARCH)
+RELEASE_IMAGE_TAG=-$(ARCH)
+else
 export IMAGE_TAG?=$(PNS)
+RELEASE_IMAGE_TAG=
+endif
 
 # BuildKit speeds up the image builds by running independent stages in a
 # multi-stage Dockerfile concurrently. BuildKit is a breeze to use with Docker -
@@ -86,22 +95,22 @@ build:
 	$(CONTAINER_RUNTIME) build --target notconf-debug -t $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug --build-arg BUILD_TYPE=Debug $(CONTAINER_BUILD_ARGS) .
 
 tag-release:
-	$(CONTAINER_RUNTIME) tag $(IMAGE_PATH)notconf:$(IMAGE_TAG) $(IMAGE_PATH)notconf:latest
-	$(CONTAINER_RUNTIME) tag $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug $(IMAGE_PATH)notconf:debug
+	$(CONTAINER_RUNTIME) tag $(IMAGE_PATH)notconf:$(IMAGE_TAG) $(IMAGE_PATH)notconf:latest$(RELEASE_IMAGE_TAG)
+	$(CONTAINER_RUNTIME) tag $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug $(IMAGE_PATH)notconf:debug$(RELEASE_IMAGE_TAG)
 
 push-release:
-	$(CONTAINER_RUNTIME) push $(IMAGE_PATH)notconf:debug
-	$(CONTAINER_RUNTIME) push $(IMAGE_PATH)notconf:latest
+	$(CONTAINER_RUNTIME) push $(IMAGE_PATH)notconf:debug$(RELEASE_IMAGE_TAG)
+	$(CONTAINER_RUNTIME) push $(IMAGE_PATH)notconf:latest$(RELEASE_IMAGE_TAG)
 
 push:
 	$(CONTAINER_RUNTIME) push $(IMAGE_PATH)notconf:$(IMAGE_TAG)
 	$(CONTAINER_RUNTIME) push $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug
 
 tag-release-composed-notconf: composed-notconf.txt
-	for tag in $$(uniq $<); do release_tag=$$(echo $${tag} | sed 's/-$(PNS)$$//'); $(CONTAINER_RUNTIME) tag $${tag} $${release_tag}; done
+	for tag in $$(uniq $<); do release_tag=$$(echo $${tag} | sed 's/-$(IMAGE_TAG)$$//'); $(CONTAINER_RUNTIME) tag $${tag} $${release_tag}; done
 
 push-release-composed-notconf: composed-notconf.txt
-	for release_tag in $$(sed 's/-$(PNS)$$//g' $< | uniq); do $(CONTAINER_RUNTIME) push $${release_tag}; done
+	for release_tag in $$(sed 's/-$(IMAGE_TAG)$$//g' $< | uniq); do $(CONTAINER_RUNTIME) push $${release_tag}; done
 
 push-composed-notconf: composed-notconf.txt
 	for tag in $$(uniq $<); do $(CONTAINER_RUNTIME) push $${tag}; done
@@ -252,27 +261,29 @@ clone-yangmodels:
 EXPLODED_YANG_PATH=$(subst /, ,$(YANG_PATH))
 ifneq (,$(findstring latest_sros,$(YANG_PATH)))
 	COMPOSE_IMAGE_NAME?=sros
-	COMPOSE_IMAGE_TAG?=$(subst latest_sros_,,$(filter latest_sros%,$(EXPLODED_YANG_PATH)))
+	COMPOSE_IMAGE_TAG_PREFIX?=$(subst latest_sros_,,$(filter latest_sros%,$(EXPLODED_YANG_PATH)))
 else ifneq (,$(findstring junos,$(YANG_PATH)))
 # .../vendor/juniper/20.1/20.1R1/junos
 # last word is the os - junos
 	COMPOSE_IMAGE_NAME?=$(lastword $(EXPLODED_YANG_PATH))
 # second to last word is the version - 21.1R1
-	COMPOSE_IMAGE_TAG?=$(lastword $(filter-out $(lastword $(EXPLODED_YANG_PATH)),$(EXPLODED_YANG_PATH)))
+	COMPOSE_IMAGE_TAG_PREFIX?=$(lastword $(filter-out $(lastword $(EXPLODED_YANG_PATH)),$(EXPLODED_YANG_PATH)))
 else ifneq (,$(findstring cisco,$(YANG_PATH)))
 # .../vendor/cisco/xr/751
 # 3rd and 2nd words from the right are the os - cisco-xr
 	COMPOSE_IMAGE_NAME?=cisco-$(lastword $(filter-out $(lastword $(EXPLODED_YANG_PATH)),$(EXPLODED_YANG_PATH)))
-	COMPOSE_IMAGE_TAG?=$(lastword $(EXPLODED_YANG_PATH))
+	COMPOSE_IMAGE_TAG_PREFIX?=$(lastword $(EXPLODED_YANG_PATH))
 else
 	COMPOSE_IMAGE_NAME?=$(subst /,_,$(patsubst %/,%,$(YANG_PATH)))
-	COMPOSE_IMAGE_TAG?=latest
+	COMPOSE_IMAGE_TAG_PREFIX?=latest
 endif
+
+COMPOSE_IMAGE_TAG:=$(COMPOSE_IMAGE_TAG_PREFIX)-$(IMAGE_TAG)
 
 # compose-notconf-yang: build a docker image with notconf:base with the given
 # YANG modules already installed. Provide the path to the modules (and init
 # XMLs) with the YANG_PATH variable.
-compose-notconf-yang: COMPOSE_PATH=build/$(COMPOSE_IMAGE_NAME)/$(COMPOSE_IMAGE_TAG)
+compose-notconf-yang: COMPOSE_PATH=build/$(COMPOSE_IMAGE_NAME)/$(COMPOSE_IMAGE_TAG_PREFIX)
 compose-notconf-yang:
 	@if [ -z "$(YANG_PATH)" ]; then echo "The YANG_PATH variable must be set"; exit 1; fi
 	rm -rf $(COMPOSE_PATH)
@@ -288,18 +299,18 @@ compose-notconf-yang:
 		echo "Copying files directly from $(YANG_PATH) without fixups"; \
 		cp -av $(YANG_PATH)/. $(COMPOSE_PATH); \
 	fi
-	$(CONTAINER_RUNTIME) build -f Dockerfile.yang -t $(IMAGE_PATH)notconf-$(COMPOSE_IMAGE_NAME):$(COMPOSE_IMAGE_TAG)-$(PNS) \
+	$(CONTAINER_RUNTIME) build -f Dockerfile.yang -t $(IMAGE_PATH)notconf-$(COMPOSE_IMAGE_NAME):$(COMPOSE_IMAGE_TAG) \
 		--build-arg COMPOSE_PATH=$(COMPOSE_PATH) --build-arg IMAGE_PATH=$(IMAGE_PATH) --build-arg IMAGE_TAG=$(IMAGE_TAG) $(DOCKER_BUILD_CACHE_ARG) \
 		--label org.opencontainers.image.description="This image contains the base notconf installation (sysrepo+netopeer2) with the following YANG modules pre-installed: $(COMPOSE_IMAGE_NAME)/$(COMPOSE_IMAGE_TAG)" .
-	echo $(IMAGE_PATH)notconf-$(COMPOSE_IMAGE_NAME):$(COMPOSE_IMAGE_TAG)-$(PNS) >> composed-notconf.txt
+	echo $(IMAGE_PATH)notconf-$(COMPOSE_IMAGE_NAME):$(COMPOSE_IMAGE_TAG) >> composed-notconf.txt
 
 test-compose-yang: compose-notconf-yang
 	$(MAKE) test-composed-notconf-yang
 
-test-composed-notconf-yang: export CNT_PREFIX=test-yang-$(COMPOSE_IMAGE_NAME)-$(COMPOSE_IMAGE_TAG)-$(PNS)
+test-composed-notconf-yang: export CNT_PREFIX=test-yang-$(COMPOSE_IMAGE_NAME)-$(COMPOSE_IMAGE_TAG)
 test-composed-notconf-yang:
 	-$(CONTAINER_RUNTIME) rm -f $(CNT_PREFIX)
-	$(CONTAINER_RUNTIME) run -d --log-driver json-file --name $(CNT_PREFIX) $(IMAGE_PATH)notconf-$(COMPOSE_IMAGE_NAME):$(COMPOSE_IMAGE_TAG)-$(PNS)
+	$(CONTAINER_RUNTIME) run -d --log-driver json-file --name $(CNT_PREFIX) $(IMAGE_PATH)notconf-$(COMPOSE_IMAGE_NAME):$(COMPOSE_IMAGE_TAG)
 	$(MAKE) wait-healthy
 	$(CONTAINER_RUNTIME) run -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug netconf-console2 --port 830 --hello
 	$(CONTAINER_RUNTIME) run -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug netconf-console2 --port 830 --get -x /modules-state
