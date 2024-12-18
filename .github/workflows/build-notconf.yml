@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   build-notconf-base:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
     - name: Show podman info
@@ -73,7 +73,7 @@ jobs:
         path: container-logs/
 
   build-yangmodels:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
         path: [yang/vendor/nokia/7x50_YangModels/latest_sros_21.10,
