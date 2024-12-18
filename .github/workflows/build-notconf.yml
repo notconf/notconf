@@ -104,7 +104,7 @@ jobs:
 
     - name: Install test prerequisites
       run: |
-        pip3 install pyang
+        which pyang || pip3 install pyang
         sudo apt-get install -qy xmlstarlet
 
     - name: Cache yangmodels
