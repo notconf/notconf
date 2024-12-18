@@ -152,3 +152,22 @@ jobs:
       with:
         name: container-logs-${{ steps.artifact-name.outputs.COMPOSE_IMAGE_NAME }}-${{ steps.artifact-name.outputs.COMPOSE_IMAGE_TAG }}
         path: container-logs/
+
+  create-manifest:
+    needs:
+    - build-notconf-base
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Log in to the container registry
+      uses: redhat-actions/podman-login@v1
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create and push release manifests
+        if: ${{ github.ref_name == 'main' }}
+        run: |
+          make create-release-manifest
+          make push-release-manifest

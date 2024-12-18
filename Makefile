@@ -106,6 +106,18 @@ push:
 	$(CONTAINER_RUNTIME) push $(IMAGE_PATH)notconf:$(IMAGE_TAG)
 	$(CONTAINER_RUNTIME) push $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug
 
+create-manifest:
+	$(CONTAINER_RUNTIME) manifest create $(IMAGE_PATH)notconf:$(IMAGE_TAG) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-x86_64 $(IMAGE_PATH)notconf:$(IMAGE_TAG)-aarch64
+
+push-manifest:
+	$(CONTAINER_RUNTIME) manifest push $(IMAGE_PATH)notconf:$(IMAGE_TAG) docker://$(IMAGE_PATH)notconf:$(IMAGE_TAG)
+
+create-release-manifest:
+	$(CONTAINER_RUNTIME) manifest create $(IMAGE_PATH)notconf:latest $(IMAGE_PATH)notconf:latest-x86_64 $(IMAGE_PATH)notconf:latest-aarch64
+
+push-release-manifest:
+	$(CONTAINER_RUNTIME) manifest push $(IMAGE_PATH)notconf:latest docker://$(IMAGE_PATH)notconf:latest
+
 tag-release-composed-notconf: composed-notconf.txt
 	for tag in $$(uniq $<); do release_tag=$$(echo $${tag} | sed 's/-$(IMAGE_TAG)$$//'); $(CONTAINER_RUNTIME) tag $${tag} $${release_tag}; done
 
