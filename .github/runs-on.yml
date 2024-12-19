@@ -1,0 +1,19 @@
+images:
+  notconf:
+    owner: 472628573307
+    arch: arm64
+    platform: linux
+    ami: ami-061e37d4444e0ed91
+
+  runs-on-v2.2-ubuntu24-full-arm64-podman:
+    platform: "linux"
+    arch: "arm64"
+    owner: "135269210855" # RunsOn owner
+    name: "runs-on-v2.2-ubuntu24-full-arm64-*" # RunsOn x64 most recent image
+    # Assuming you have specified a custom policy (`EC2InstanceCustomPolicy`)
+    # so that the runner VMs are able to transparently access ECR
+    preinstall: |
+      #!/bin/bash
+      echo "Doing custom things before job starts"
+      apt update
+      apt install -y podman
