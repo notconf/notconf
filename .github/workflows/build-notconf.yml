@@ -20,7 +20,7 @@ jobs:
       - ${{ matrix.platform == 'amd64' && 'ubuntu-latest' || 'runs-on' }}
       - ${{ matrix.platform == 'arm64' && 'runner=2cpu-linux-arm64' }}
       - ${{ matrix.platform == 'arm64' && 'tag=build-notconf-'}}${{ matrix.platform == 'arm64' && matrix.platform }}
-      - ${{ matrix.platform == 'arm64' && 'image=runs-on-v2.2-ubuntu24-full-arm64-podman' }}
+      - ${{ matrix.platform == 'arm64' && 'image=notconf' }}
 
     steps:
     - name: Set up environment
