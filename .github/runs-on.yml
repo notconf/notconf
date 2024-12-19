@@ -1,0 +1,17 @@
+images:
+  notconf:
+    owner: 472628573307 # it's a me
+    arch: arm64
+    platform: linux
+    name: github-runner-notconf-* # most recent image
+
+  runs-on-v2.2-ubuntu24-full-arm64-podman:
+    platform: "linux"
+    arch: "arm64"
+    owner: "135269210855" # RunsOn owner
+    name: "runs-on-v2.2-ubuntu24-full-arm64-*" # RunsOn x64 most recent image
+    preinstall: |
+      #!/bin/bash
+      echo "Doing custom things before job starts"
+      apt update
+      apt install -y podman
