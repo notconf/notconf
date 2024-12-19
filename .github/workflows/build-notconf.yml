@@ -16,7 +16,11 @@ jobs:
     strategy:
       matrix:
         platform: [amd64, arm64]
-    runs-on: ${{ matrix.platform == 'amd64' && 'ubuntu-latest' || 'self-hosted' }}
+    runs-on:
+      - ${{ matrix.platform == 'amd64' && 'ubuntu-latest' || 'runs-on' }}
+      - ${{ matrix.platform == 'arm64' && 'runner=2cpu-linux-arm64' }}
+      - ${{ matrix.platform == 'arm64' && 'tag=build-notconf-'}}${{ matrix.platform == 'arm64' && matrix.platform }}
+      - ${{ matrix.platform == 'arm64' && 'image=ubuntu24-full-arm64' }}
 
     steps:
     - name: Set up environment
@@ -87,7 +91,11 @@ jobs:
               yang/vendor/cisco/xr/762,
               yang/vendor/cisco/xr/771]
         platform: [amd64, arm64]
-    runs-on: ${{ matrix.platform == 'amd64' && 'ubuntu-latest' || 'self-hosted' }}
+    runs-on:
+      - ${{ matrix.platform == 'amd64' && 'ubuntu-latest' || 'runs-on' }}
+      - ${{ matrix.platform == 'arm64' && 'runner=2cpu-linux-arm64' }}
+      - ${{ matrix.platform == 'arm64' && 'tag=build-yangmodels-'}}${{ matrix.platform == 'arm64' && matrix.platform }}${{ matrix.platform == 'arm64' && matrix.path }}
+
     needs: build-notconf-base
 
     steps:
