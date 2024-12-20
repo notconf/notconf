@@ -58,6 +58,9 @@ jobs:
       # a result of a test failing so we should get the logs!
       run: CNT_PREFIX= make save-logs
 
+    - name: Touchy the file?!
+      run: touch /run/user/1001/containers/auth.json
+
     - name: Log in to the container registry
       uses: redhat-actions/podman-login@v1
       with:
