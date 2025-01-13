@@ -185,6 +185,43 @@ Operational data sync done!
 
 ## Troubleshooting and development
 
+### Multi-arch support and building
+
+The notconf images, like `notconf` and `notconf:debug`, are manifest tags that
+combine the images for multiple architectures. The images are built for the
+following platforms:
+- linux/amd64, arch x86_64: ghcr.io/notconf/notconf:latest-x86_64
+- linux/arm64, arch aarch64: ghcr.io/notconf/notconf:latest-aarch64
+
+This means you can use the notconf images from the public registry natively on
+the supported platforms. For example, on MacOS running on Apple silicon, using
+the `ghcr.io/notconf/notconf:latest` image tag will transparently pull the
+`ghcr.io/notconf/notconf:latest-aarch64` image.
+
+The same holds true for the composed images containing vendor YANG modules. The
+version tagged image, like `notconf-junos:21.2R1`, is a manifest tag that
+combines the images for the supported architectures.
+
+```shell
+❯ docker run -it --rm ghcr.io/notconf/notconf:latest uname -m
+aarch64
+```
+
+If you start a local build, only a single image architecture - that of the build
+host, will be built. In CI we build the multi-arch images on the native platform
+hardware, i.e. for x86_64 we use the public GitHub Actions runners, and for
+aarch64 we use an ARM64 server in AWS.
+
+Building a local development image is as simple as ensuring you have installed
+the build prerequisites and running the make recipes:
+
+```shell
+# get the dependencies
+❯ make clone-deps
+# build the base images
+❯ make build
+```
+
 ## WIP and planned work
 
 - [ ] Automatically build composed images for more platforms (+ versions)
