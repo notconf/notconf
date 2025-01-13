@@ -12,6 +12,21 @@ permissions:
   packages: write
 
 jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      yang_paths: ${{ steps.set-yang-paths.outputs.yang_paths }}
+    steps:
+      - id: set-yang-paths
+        run: |
+          echo "yang_paths=[ \
+          \"yang/vendor/nokia/7x50_YangModels/latest_sros_21.10\", \
+          \"yang/vendor/nokia/7x50_YangModels/latest_sros_22.2\", \
+          \"yang/vendor/juniper/21.1/21.1R1/junos\", \
+          \"yang/vendor/cisco/xr/762\", \
+          \"yang/vendor/cisco/xr/771\" \
+          ]" >> $GITHUB_OUTPUT
+
   build-notconf-base:
     strategy:
       matrix:
@@ -79,16 +94,14 @@ jobs:
         path: container-logs/
 
   build-yangmodels:
+    needs:
+      - prepare
+      - build-notconf-base
     strategy:
       matrix:
-        path: [yang/vendor/nokia/7x50_YangModels/latest_sros_21.10,
-              yang/vendor/nokia/7x50_YangModels/latest_sros_22.2,
-              yang/vendor/juniper/21.1/21.1R1/junos,
-              yang/vendor/cisco/xr/762,
-              yang/vendor/cisco/xr/771]
+        path: ${{ fromJson(needs.prepare.outputs.yang_paths) }}
         arch: [x86_64, aarch64]
     runs-on: ${{ matrix.arch == 'x86_64' && 'ubuntu-latest' || 'self-hosted' }}
-    needs: build-notconf-base
 
     steps:
     - name: Set up environment
@@ -179,15 +192,12 @@ jobs:
 
   create-composed-manifest:
     if: ${{ github.ref_name == 'main' }}
+    needs:
+    - prepare
+    - build-yangmodels
     strategy:
       matrix:
-        path: [yang/vendor/nokia/7x50_YangModels/latest_sros_21.10,
-              yang/vendor/nokia/7x50_YangModels/latest_sros_22.2,
-              yang/vendor/juniper/21.1/21.1R1/junos,
-              yang/vendor/cisco/xr/762,
-              yang/vendor/cisco/xr/771]
-    needs:
-      - build-yangmodels
+        path: ${{ fromJson(needs.prepare.outputs.yang_paths) }}
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
