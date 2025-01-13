@@ -123,19 +123,23 @@ push-release-manifest:
 # ghcr.io/notconf/notconf-junos:21.1R1-12743215247-x86_64 -> ghcr.io/notconf/notconf-junos:21.1R
 RELEASE_COMPOSED_MANIFEST_LIST_NAME = $(subst -$(IMAGE_TAG),,$(IMAGE_PATH)notconf-$(COMPOSE_IMAGE_NAME):$(COMPOSE_IMAGE_TAG))
 
+# Release composed image name is the composed image name for a given YANG_PATH
+# with stripped $(PNS)-$(ARCH) (a.k.a. $(IMAGE_TAG)) suffix.
+# ghcr.io/notconf/notconf-junos:21.1R1-12743215247-x86_64 -> ghcr.io/notconf/notconf-junos:21.1R1
+RELEASE_COMPOSED_IMAGE_NAME = $(IMAGE_PATH)notconf-$(COMPOSE_IMAGE_NAME):$(COMPOSE_IMAGE_TAG_PREFIX)
 create-release-composed-notconf-manifest:
 	$(CONTAINER_RUNTIME) manifest create $(RELEASE_COMPOSED_MANIFEST_LIST_NAME)
-	$(CONTAINER_RUNTIME) manifest add $(RELEASE_COMPOSED_MANIFEST_LIST_NAME) $(IMAGE_PATH)notconf-$(COMPOSE_IMAGE_NAME):$(COMPOSE_IMAGE_TAG)-x86_64
-	$(CONTAINER_RUNTIME) manifest add $(RELEASE_COMPOSED_MANIFEST_LIST_NAME) $(IMAGE_PATH)notconf-$(COMPOSE_IMAGE_NAME):$(COMPOSE_IMAGE_TAG)-aarch64
+	$(CONTAINER_RUNTIME) manifest add $(RELEASE_COMPOSED_MANIFEST_LIST_NAME) $(RELEASE_COMPOSED_IMAGE_NAME)-x86_64
+	$(CONTAINER_RUNTIME) manifest add $(RELEASE_COMPOSED_MANIFEST_LIST_NAME) $(RELEASE_COMPOSED_IMAGE_NAME)-aarch64
 
 push-release-composed-notconf-manifest:
 	$(CONTAINER_RUNTIME) manifest push $(RELEASE_COMPOSED_MANIFEST_LIST_NAME)
 
 tag-release-composed-notconf: composed-notconf.txt
-	for tag in $$(uniq $<); do release_tag=$$(echo $${tag} | sed 's/-$(IMAGE_TAG)$$//'); $(CONTAINER_RUNTIME) tag $${tag} $${release_tag}; done
+	for tag in $$(uniq $<); do release_tag=$$(echo $${tag} | sed 's/-$(IMAGE_TAG)$$/$(RELEASE_IMAGE_TAG)/'); $(CONTAINER_RUNTIME) tag $${tag} $${release_tag}; done
 
 push-release-composed-notconf: composed-notconf.txt
-	for release_tag in $$(sed 's/-$(IMAGE_TAG)$$//g' $< | uniq); do $(CONTAINER_RUNTIME) push $${release_tag}; done
+	for release_tag in $$(sed 's/-$(IMAGE_TAG)$$/$(RELEASE_IMAGE_TAG)/g' $< | uniq); do $(CONTAINER_RUNTIME) push $${release_tag}; done
 
 push-composed-notconf: composed-notconf.txt
 	for tag in $$(uniq $<); do $(CONTAINER_RUNTIME) push $${tag}; done
