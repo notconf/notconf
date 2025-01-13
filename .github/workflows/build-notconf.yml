@@ -12,10 +12,31 @@ permissions:
   packages: write
 
 jobs:
-  build-notconf-base:
+  prepare:
     runs-on: ubuntu-latest
+    outputs:
+      yang_paths: ${{ steps.set-yang-paths.outputs.yang_paths }}
+    steps:
+      - id: set-yang-paths
+        run: |
+          echo "yang_paths=[ \
+          \"yang/vendor/nokia/7x50_YangModels/latest_sros_21.10\", \
+          \"yang/vendor/nokia/7x50_YangModels/latest_sros_22.2\", \
+          \"yang/vendor/juniper/21.1/21.1R1/junos\", \
+          \"yang/vendor/cisco/xr/762\", \
+          \"yang/vendor/cisco/xr/771\" \
+          ]" >> $GITHUB_OUTPUT
+
+  build-notconf-base:
+    strategy:
+      matrix:
+        arch: [x86_64, aarch64]
+    runs-on: ${{ matrix.arch == 'x86_64' && 'ubuntu-latest' || 'self-hosted' }}
 
     steps:
+    - name: Set up environment
+      run: echo "ARCH=${{ matrix.arch }}" >> $GITHUB_ENV
+
     - name: Show podman info
       run: |
         podman info --format '{{ .Host.LogDriver }}'
@@ -69,21 +90,23 @@ jobs:
       uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: container-logs-notconf
+        name: container-logs-notconf-${{ matrix.arch }}
         path: container-logs/
 
   build-yangmodels:
-    runs-on: ubuntu-latest
+    needs:
+      - prepare
+      - build-notconf-base
     strategy:
       matrix:
-        path: [yang/vendor/nokia/7x50_YangModels/latest_sros_21.10,
-              yang/vendor/nokia/7x50_YangModels/latest_sros_22.2,
-              yang/vendor/juniper/21.1/21.1R1/junos,
-              yang/vendor/cisco/xr/762,
-              yang/vendor/cisco/xr/771]
-    needs: build-notconf-base
+        path: ${{ fromJson(needs.prepare.outputs.yang_paths) }}
+        arch: [x86_64, aarch64]
+    runs-on: ${{ matrix.arch == 'x86_64' && 'ubuntu-latest' || 'self-hosted' }}
 
     steps:
+    - name: Set up environment
+      run: echo "ARCH=${{ matrix.arch }}" >> $GITHUB_ENV
+
     - name: Show podman info
       run: |
         podman info --format '{{ .Host.LogDriver }}'
@@ -94,7 +117,7 @@ jobs:
 
     - name: Install test prerequisites
       run: |
-        pip3 install pyang
+        which pyang || pip3 install pyang
         sudo apt-get install -qy xmlstarlet
 
     - name: Cache yangmodels
@@ -140,5 +163,52 @@ jobs:
       uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: container-logs-${{ steps.artifact-name.outputs.COMPOSE_IMAGE_NAME }}-${{ steps.artifact-name.outputs.COMPOSE_IMAGE_TAG }}
+        name: container-logs-${{ steps.artifact-name.outputs.COMPOSE_IMAGE_NAME }}-${{ steps.artifact-name.outputs.COMPOSE_IMAGE_TAG }}-${{ matrix.arch }}
         path: container-logs/
+
+  create-base-manifest:
+    needs:
+    - build-notconf-base
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Log in to the container registry
+      uses: redhat-actions/podman-login@v1
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Create and push manifests
+      run: |
+        make create-manifest
+        make push-manifest
+
+    - name: Create and push release manifests
+      if: ${{ github.ref_name == 'main' }}
+      run: |
+        make create-release-manifest
+        make push-release-manifest
+
+  create-composed-manifest:
+    if: ${{ github.ref_name == 'main' }}
+    needs:
+    - prepare
+    - build-yangmodels
+    strategy:
+      matrix:
+        path: ${{ fromJson(needs.prepare.outputs.yang_paths) }}
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Log in to the container registry
+      uses: redhat-actions/podman-login@v1
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Create and push release manifests
+      run: |
+        make create-release-composed-notconf-manifest YANG_PATH=${{ matrix.path }}
+        make push-release-composed-notconf-manifest YANG_PATH=${{ matrix.path }}
