@@ -118,6 +118,19 @@ create-release-manifest:
 push-release-manifest:
 	$(CONTAINER_RUNTIME) manifest push $(IMAGE_PATH)notconf:latest docker://$(IMAGE_PATH)notconf:latest
 
+# Release manifest list name for composed images is the composed image name for
+# a given YANG_PATH with stripped -$(PNS)-$(ARCH) (a.k.a. $(IMAGE_TAG)) suffix.
+# ghcr.io/notconf/notconf-junos:21.1R1-12743215247-x86_64 -> ghcr.io/notconf/notconf-junos:21.1R
+RELEASE_COMPOSED_MANIFEST_LIST_NAME = $(subst -$(IMAGE_TAG),,$(IMAGE_PATH)notconf-$(COMPOSE_IMAGE_NAME):$(COMPOSE_IMAGE_TAG))
+
+create-release-composed-notconf-manifest:
+	$(CONTAINER_RUNTIME) manifest create $(RELEASE_COMPOSED_MANIFEST_LIST_NAME)
+	$(CONTAINER_RUNTIME) manifest add $(RELEASE_COMPOSED_MANIFEST_LIST_NAME) $(IMAGE_PATH)notconf-$(COMPOSE_IMAGE_NAME):$(COMPOSE_IMAGE_TAG)-x86_64
+	$(CONTAINER_RUNTIME) manifest add $(RELEASE_COMPOSED_MANIFEST_LIST_NAME) $(IMAGE_PATH)notconf-$(COMPOSE_IMAGE_NAME):$(COMPOSE_IMAGE_TAG)-aarch64
+
+push-release-composed-notconf-manifest:
+	$(CONTAINER_RUNTIME) manifest push $(RELEASE_COMPOSED_MANIFEST_LIST_NAME)
+
 tag-release-composed-notconf: composed-notconf.txt
 	for tag in $$(uniq $<); do release_tag=$$(echo $${tag} | sed 's/-$(IMAGE_TAG)$$//'); $(CONTAINER_RUNTIME) tag $${tag} $${release_tag}; done
 
