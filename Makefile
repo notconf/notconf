@@ -133,7 +133,7 @@ create-release-composed-notconf-manifest:
 	$(CONTAINER_RUNTIME) manifest add $(RELEASE_COMPOSED_MANIFEST_LIST_NAME) $(RELEASE_COMPOSED_IMAGE_NAME)-aarch64
 
 push-release-composed-notconf-manifest:
-	$(CONTAINER_RUNTIME) manifest push $(RELEASE_COMPOSED_MANIFEST_LIST_NAME)
+	$(CONTAINER_RUNTIME) manifest push $(RELEASE_COMPOSED_MANIFEST_LIST_NAME) docker://$(RELEASE_COMPOSED_MANIFEST_LIST_NAME)
 
 tag-release-composed-notconf: composed-notconf.txt
 	for tag in $$(uniq $<); do release_tag=$$(echo $${tag} | sed 's/-$(IMAGE_TAG)$$/$(RELEASE_IMAGE_TAG)/'); $(CONTAINER_RUNTIME) tag $${tag} $${release_tag}; done
