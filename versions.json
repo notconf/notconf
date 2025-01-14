@@ -33,5 +33,13 @@
         "netopeer2": "v2.2.31",
         "libyang-python": "3.0.1",
         "sysrepo-python": "1.7.2"
+    },
+    "2025-01-10": {
+        "libyang": "v3.7.8",
+        "sysrepo": "v3.3.10",
+        "libnetconf2": "v3.5.5",
+        "netopeer2": "v2.2.35",
+        "libyang-python": "3.0.3",
+        "sysrepo-python": "1.7.2"
     }
 }
