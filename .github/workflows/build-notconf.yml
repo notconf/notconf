@@ -40,8 +40,10 @@ jobs:
     - name: Install podman
       if: ${{ matrix.arch == 'aarch64' }}
       run: |
+        sudo chown -R runner:docker /home/runneradmin
         sudo apt-get update
         sudo apt-get install -qy podman
+        sudo loginctl enable-linger runner
         sudo mkdir -p /etc/containers
         printf "[registries.search]\nregistries = ['docker.io', 'quay.io']\n" | sudo tee /etc/containers/registries.conf
 
@@ -118,8 +120,10 @@ jobs:
     - name: Install podman
       if: ${{ matrix.arch == 'aarch64' }}
       run: |
+        sudo chown -R runner:docker /home/runneradmin
         sudo apt-get update
         sudo apt-get install -qy podman
+        sudo loginctl enable-linger runner
         sudo mkdir -p /etc/containers
         printf "[registries.search]\nregistries = ['docker.io', 'quay.io']\n" | sudo tee /etc/containers/registries.conf
 
