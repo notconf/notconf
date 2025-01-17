@@ -37,6 +37,14 @@ jobs:
     - name: Set up environment
       run: echo "ARCH=${{ matrix.arch }}" >> $GITHUB_ENV
 
+    - name: Install podman
+      if: ${{ matrix.arch == 'aarch64' }}
+      run: |
+        sudo apt-get update
+        sudo apt-get install -qy podman
+        sudo mkdir -p /etc/containers
+        printf "[registries.search]\nregistries = ['docker.io', 'quay.io']\n" | sudo tee /etc/containers/registries.conf
+
     - name: Show podman info
       run: |
         podman info --format '{{ .Host.LogDriver }}'
@@ -106,6 +114,14 @@ jobs:
     steps:
     - name: Set up environment
       run: echo "ARCH=${{ matrix.arch }}" >> $GITHUB_ENV
+
+    - name: Install podman
+      if: ${{ matrix.arch == 'aarch64' }}
+      run: |
+        sudo apt-get update
+        sudo apt-get install -qy podman
+        sudo mkdir -p /etc/containers
+        printf "[registries.search]\nregistries = ['docker.io', 'quay.io']\n" | sudo tee /etc/containers/registries.conf
 
     - name: Show podman info
       run: |
