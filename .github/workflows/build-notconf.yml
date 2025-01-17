@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   prepare:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       yang_paths: ${{ steps.set-yang-paths.outputs.yang_paths }}
     steps:
@@ -31,11 +31,21 @@ jobs:
     strategy:
       matrix:
         arch: [x86_64, aarch64]
-    runs-on: ${{ matrix.arch == 'x86_64' && 'ubuntu-latest' || 'self-hosted' }}
+    runs-on: ${{ matrix.arch == 'x86_64' && 'ubuntu-24.04' || 'ubuntu-24.04-arm' }}
 
     steps:
     - name: Set up environment
       run: echo "ARCH=${{ matrix.arch }}" >> $GITHUB_ENV
+
+    - name: Install podman
+      if: ${{ matrix.arch == 'aarch64' }}
+      run: |
+        sudo chown -R runner:docker /home/runneradmin
+        sudo apt-get update
+        sudo apt-get install -qy podman
+        sudo loginctl enable-linger runner
+        sudo mkdir -p /etc/containers
+        printf "[registries.search]\nregistries = ['docker.io', 'quay.io']\n" | sudo tee /etc/containers/registries.conf
 
     - name: Show podman info
       run: |
@@ -101,11 +111,21 @@ jobs:
       matrix:
         path: ${{ fromJson(needs.prepare.outputs.yang_paths) }}
         arch: [x86_64, aarch64]
-    runs-on: ${{ matrix.arch == 'x86_64' && 'ubuntu-latest' || 'self-hosted' }}
+    runs-on: ${{ matrix.arch == 'x86_64' && 'ubuntu-24.04' || 'ubuntu-24.04-arm' }}
 
     steps:
     - name: Set up environment
       run: echo "ARCH=${{ matrix.arch }}" >> $GITHUB_ENV
+
+    - name: Install podman
+      if: ${{ matrix.arch == 'aarch64' }}
+      run: |
+        sudo chown -R runner:docker /home/runneradmin
+        sudo apt-get update
+        sudo apt-get install -qy podman
+        sudo loginctl enable-linger runner
+        sudo mkdir -p /etc/containers
+        printf "[registries.search]\nregistries = ['docker.io', 'quay.io']\n" | sudo tee /etc/containers/registries.conf
 
     - name: Show podman info
       run: |
@@ -169,7 +189,7 @@ jobs:
   create-base-manifest:
     needs:
     - build-notconf-base
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
     - uses: actions/checkout@v4
     - name: Log in to the container registry
@@ -198,7 +218,7 @@ jobs:
     strategy:
       matrix:
         path: ${{ fromJson(needs.prepare.outputs.yang_paths) }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
     - uses: actions/checkout@v4
     - name: Log in to the container registry
