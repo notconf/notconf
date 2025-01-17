@@ -209,8 +209,8 @@ aarch64
 
 If you start a local build, only a single image architecture - that of the build
 host, will be built. In CI we build the multi-arch images on the native platform
-hardware, i.e. for x86_64 we use the public GitHub Actions runners, and for
-aarch64 we use an ARM64 server in AWS.
+hardware, i.e. for x86_64 we use the `ubuntu-24.04` runners and for aarch64 we
+use `ubuntu-24.04-arm`.
 
 Building a local development image is as simple as ensuring you have installed
 the build prerequisites and running the make recipes:
