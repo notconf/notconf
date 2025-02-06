@@ -153,6 +153,7 @@ test-yangmodels:
 	$(MAKE) test-compose-yang YANG_PATH=yang/vendor/nokia/7x50_YangModels/latest_sros_21.20
 	$(MAKE) test-compose-yang YANG_PATH=yang/vendor/nokia/7x50_YangModels/latest_sros_22.2
 	$(MAKE) test-compose-yang YANG_PATH=yang/vendor/juniper/21.1/21.1R1/junos
+	$(MAKE) test-compose-yang YANG_PATH=yang/vendor/juniper/23.4/23.4R1/native/conf-and-rpcs/junos
 	$(MAKE) test-compose-yang YANG_PATH=yang/vendor/cisco/xr/771
 	$(MAKE) test-compose-yang YANG_PATH=yang/vendor/cisco/xr/2411
 
@@ -292,6 +293,12 @@ EXPLODED_YANG_PATH=$(subst /, ,$(YANG_PATH))
 ifneq (,$(findstring latest_sros,$(YANG_PATH)))
 	COMPOSE_IMAGE_NAME?=sros
 	COMPOSE_IMAGE_TAG_PREFIX?=$(subst latest_sros_,,$(filter latest_sros%,$(EXPLODED_YANG_PATH)))
+else ifneq (,$(findstring native/conf-and-rpcs/junos,$(YANG_PATH)))
+# ../vendor/juniper/23.4/23.4R1/native/conf-and-rpcs/junos
+# last word is the os - junos
+	COMPOSE_IMAGE_NAME?=$(lastword $(EXPLODED_YANG_PATH))
+# Fourth element from the end is the version (23.4R1) - get the word at this position
+	COMPOSE_IMAGE_TAG_PREFIX?=$(word $(shell echo $$(( $(words $(EXPLODED_YANG_PATH)) - 3 )) ),$(EXPLODED_YANG_PATH))
 else ifneq (,$(findstring junos,$(YANG_PATH)))
 # .../vendor/juniper/20.1/20.1R1/junos
 # last word is the os - junos
@@ -320,6 +327,7 @@ compose-notconf-yang:
 	mkdir -p $(COMPOSE_PATH)
 	@set -e; \
 	for fixup in `find fixups -type f -name Makefile -printf "%d %P\n" | sort -n -r | awk '{ print $$2; }'`; do \
+		echo "Checking if $(YANG_PATH) matches $${fixup}"; \
 		if [[ "$(YANG_PATH)" =~ ^$$(dirname $${fixup}).* ]]; then \
 			echo "Executing fixups/$${fixup}"; \
 			make -f fixups/$$fixup -j YANG_PATH=$(YANG_PATH) COMPOSE_PATH=$(COMPOSE_PATH); \
