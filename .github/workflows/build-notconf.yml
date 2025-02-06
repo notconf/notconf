@@ -24,7 +24,8 @@ jobs:
           \"yang/vendor/nokia/7x50_YangModels/latest_sros_22.2\", \
           \"yang/vendor/juniper/21.1/21.1R1/junos\", \
           \"yang/vendor/cisco/xr/762\", \
-          \"yang/vendor/cisco/xr/771\" \
+          \"yang/vendor/cisco/xr/771\", \
+          \"yang/vendor/cisco/xr/2411\" \
           ]" >> $GITHUB_OUTPUT
 
   build-notconf-base:

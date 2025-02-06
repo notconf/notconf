@@ -28,7 +28,8 @@ EXCLUDE+=$(YANG_PATH)/iana-crypt-hash.yang
 all: $(patsubst $(YANG_PATH)/%.yang,$(COMPOSE_PATH)/%.yang,$(filter-out $(EXCLUDE),$(YANGS)))
 
 $(COMPOSE_PATH)/%.yang: $(YANG_PATH)/%.yang
-	cp $< $@
+# Copy file if it is not empty?!
+	@if [ -s $< ]; then cp $< $@; fi
 
 # 76x releases: When statements referencing nodes where they are defined
 $(COMPOSE_PATH)/Cisco-IOS-XR-sysadmin-ethsw-esdma-sfp.yang: $(YANG_PATH)/Cisco-IOS-XR-sysadmin-ethsw-esdma-sfp.yang

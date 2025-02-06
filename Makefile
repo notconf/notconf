@@ -153,7 +153,8 @@ test-yangmodels:
 	$(MAKE) test-compose-yang YANG_PATH=yang/vendor/nokia/7x50_YangModels/latest_sros_21.20
 	$(MAKE) test-compose-yang YANG_PATH=yang/vendor/nokia/7x50_YangModels/latest_sros_22.2
 	$(MAKE) test-compose-yang YANG_PATH=yang/vendor/juniper/21.1/21.1R1/junos
-	#$(MAKE) test-compose-yang YANG_PATH=yang/vendor/cisco/xr/771
+	$(MAKE) test-compose-yang YANG_PATH=yang/vendor/cisco/xr/771
+	$(MAKE) test-compose-yang YANG_PATH=yang/vendor/cisco/xr/2411
 
 # test-notconf-mount: start a notconf:latest container with the test YANG
 # modules mounted to /yang-modules in the container. All YANG modules and XML
