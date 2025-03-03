@@ -102,6 +102,10 @@ RUN apt-get update \
  && apt-get install -qy inotify-tools python3-pip \
 # Allow pip to "break" the distro Python for the sake of the sysrepo and libyang Python bindings
  && find /usr/lib/python* -name EXTERNALLY-MANAGED -delete \
+# six is not explicitly listed as a dependency of netconf-console2, but is still
+# imported?! It used to be provided by ncclient, but they removed Python 2
+# support in https://github.com/ncclient/ncclient/pull/607
+ && pip3 install six \
  && pip3 install netconf-console2 \
  && pip3 install sysrepo==${SYSREPO_PYTHON_VERSION} libyang==${LIBYANG_PYTHON_VERSION} \
  && apt-get -qy remove python3-pip \
