@@ -108,15 +108,19 @@ push:
 
 create-manifest:
 	$(CONTAINER_RUNTIME) manifest create $(IMAGE_PATH)notconf:$(IMAGE_TAG) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-x86_64 $(IMAGE_PATH)notconf:$(IMAGE_TAG)-aarch64
+	$(CONTAINER_RUNTIME) manifest create $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug $(IMAGE_PATH)notconf:$(IMAGE_TAG)-x86_64-debug $(IMAGE_PATH)notconf:$(IMAGE_TAG)-aarch64-debug
 
 push-manifest:
 	$(CONTAINER_RUNTIME) manifest push $(IMAGE_PATH)notconf:$(IMAGE_TAG) docker://$(IMAGE_PATH)notconf:$(IMAGE_TAG)
+	$(CONTAINER_RUNTIME) manifest push $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug docker://$(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug
 
 create-release-manifest:
 	$(CONTAINER_RUNTIME) manifest create $(IMAGE_PATH)notconf:latest $(IMAGE_PATH)notconf:latest-x86_64 $(IMAGE_PATH)notconf:latest-aarch64
+	$(CONTAINER_RUNTIME) manifest create $(IMAGE_PATH)notconf:debug $(IMAGE_PATH)notconf:debug-x86_64 $(IMAGE_PATH)notconf:debug-aarch64
 
 push-release-manifest:
 	$(CONTAINER_RUNTIME) manifest push $(IMAGE_PATH)notconf:latest docker://$(IMAGE_PATH)notconf:latest
+	$(CONTAINER_RUNTIME) manifest push $(IMAGE_PATH)notconf:debug docker://$(IMAGE_PATH)notconf:debug
 
 # Release manifest list name for composed images is the composed image name for
 # a given YANG_PATH with stripped -$(PNS)-$(ARCH) (a.k.a. $(IMAGE_TAG)) suffix.
