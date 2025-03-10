@@ -51,7 +51,7 @@ def main():
     logging.info('done merging operational data')
     if args.sync_file:
         with open(args.sync_file, 'w') as f:
-            f.write(str(datetime.datetime.utcnow()))
+            f.write(str(datetime.datetime.now(datatime.UTC)))
     signal.sigwait({signal.SIGINT, signal.SIGTERM})
     stop.set()
     t.join()
