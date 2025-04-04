@@ -35,6 +35,8 @@ time sysrepoctl --search-dirs ${YANG_MODULES_DIR} ${install_modules[@]} -v3
 
 # Enable features
 # Read csv file with feature list
+# Disable globbing to allow for * feature names
+set -o noglob
 if [ -f "${YANG_MODULES_DIR}/enable-features.csv" ]; then
 	prev_module=""
 	feature_enable=""
