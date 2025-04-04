@@ -1,22 +1,4 @@
 {
-    "2024-02-09-devel": {
-        "libyang": "b34bd8a91570e287f9e6b0dae444677d226d2c32",
-        "sysrepo": "02c2565a285daf31ae0243dfe46a23c527a1896f",
-        "libnetconf2": "5d712ac5d84665014ef6fae830b9eba0b06a037f",
-        "netopeer2": "512dff7c714ac47105a00b0972b703526770ba35",
-        "libssh": "stable-0.10",
-        "libyang-python": "2.8.0",
-        "sysrepo-python": "1.6.0"
-    },
-    "2024-01-16-devel": {
-        "libyang": "fc4dbd923e044006c93df020590a1e5a8656c09e",
-        "sysrepo": "5a184830be003233a7fffb4e84967fc6677af3d8",
-        "libnetconf2": "8846e7e2b74492aa8267a0d25efbc9194a627876",
-        "netopeer2": "c44c54d19ccc87fb70ffebcbae202e8997cd886b",
-        "libssh": "stable-0.10",
-        "libyang-python": "2.8.0",
-        "sysrepo-python": "1.6.0"
-    },
     "2024-01-16": {
         "libyang": "v2.1.148",
         "sysrepo": "v2.2.150",
@@ -39,6 +21,14 @@
         "sysrepo": "v3.3.10",
         "libnetconf2": "v3.5.5",
         "netopeer2": "v2.2.35",
+        "libyang-python": "3.0.3",
+        "sysrepo-python": "1.7.2"
+    },
+    "2025-04-04-devel": {
+        "libyang": "ce38b35612022dfc907d620ae5caff735155cb5f",
+        "sysrepo": "76379db0fc8dbc7200d520c915b43c18b19e69cd",
+        "libnetconf2": "0561951e49d34ac064642ec847f702a4bdd18f1a",
+        "netopeer2": "d1669dc0ea5e88a9e28be15987c6e5c0ebb0999f",
         "libyang-python": "3.0.3",
         "sysrepo-python": "1.7.2"
     }
