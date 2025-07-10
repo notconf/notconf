@@ -78,12 +78,17 @@ clone-or-update:
 # keys being the project names and the values being the git commit hash or
 # branch name. If the branch name is not defined for a project, the default is
 # to use the branch name from the top level dictionary.
-PIN_NAME?=2025-07-30
+PIN_NAME?=2025-08-04-rousette
 clone-deps:
 	$(MAKE) clone-or-update REPOSITORY=https://github.com/CESNET/libyang.git BRANCH=$(shell jq --raw-output '."$(PIN_NAME)"."libyang" // "$(PIN_NAME)"' versions.json)
 	$(MAKE) clone-or-update REPOSITORY=https://github.com/sysrepo/sysrepo.git BRANCH=$(shell jq --raw-output '."$(PIN_NAME)"."sysrepo" // "$(PIN_NAME)"' versions.json)
 	$(MAKE) clone-or-update REPOSITORY=https://github.com/CESNET/libnetconf2.git BRANCH=$(shell jq --raw-output '."$(PIN_NAME)"."libnetconf2" // "$(PIN_NAME)"' versions.json)
 	$(MAKE) clone-or-update REPOSITORY=https://github.com/CESNET/netopeer2.git BRANCH=$(shell jq --raw-output '."$(PIN_NAME)"."netopeer2" // "$(PIN_NAME)"' versions.json)
+	$(MAKE) clone-or-update REPOSITORY=https://github.com/CESNET/rousette.git BRANCH=$(shell jq --raw-output '."$(PIN_NAME)"."rousette" // "$(PIN_NAME)"' versions.json)
+	$(MAKE) clone-or-update REPOSITORY=https://github.com/CESNET/libyang-cpp.git BRANCH=$(shell jq --raw-output '."$(PIN_NAME)"."libyang-cpp" // "$(PIN_NAME)"' versions.json)
+	$(MAKE) clone-or-update REPOSITORY=https://github.com/sysrepo/sysrepo-cpp.git BRANCH=$(shell jq --raw-output '."$(PIN_NAME)"."sysrepo-cpp" // "$(PIN_NAME)"' versions.json)
+	$(MAKE) clone-or-update REPOSITORY=https://github.com/nghttp2/nghttp2-asio.git BRANCH=$(shell jq --raw-output '."$(PIN_NAME)"."nghttp2-asio" // "$(PIN_NAME)"' versions.json)
+	$(MAKE) clone-or-update REPOSITORY=https://github.com/HowardHinnant/date.git BRANCH=$(shell jq --raw-output '."$(PIN_NAME)"."date" // "v3.0.1"' versions.json)
 
 CONTAINER_BUILD_ARGS=--build-arg SYSREPO_PYTHON_VERSION=$(shell jq --raw-output '."$(PIN_NAME)"."sysrepo-python" // "$(PIN_NAME)"' versions.json) --build-arg LIBYANG_PYTHON_VERSION=$(shell jq --raw-output '."$(PIN_NAME)"."libyang-python" // "$(PIN_NAME)"' versions.json)
 build:
