@@ -31,5 +31,14 @@
         "netopeer2": "d1669dc0ea5e88a9e28be15987c6e5c0ebb0999f",
         "libyang-python": "3.0.3",
         "sysrepo-python": "1.7.2"
+    },
+    "2025-07-30": {
+        "libyang": "v3.12.2",
+        "sysrepo": "v3.6.11",
+        "libnetconf2": "v3.7.1",
+        "netopeer2": "v2.4.1",
+        "libssh": "stable-0.11",
+        "libyang-python": "3.1.0",
+        "sysrepo-python": "1.7.6"
     }
 }
