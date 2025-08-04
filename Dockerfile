@@ -48,6 +48,8 @@ RUN cmake -B build -D CMAKE_BUILD_TYPE:String=${BUILD_TYPE} && \
   ldconfig && \
   make -C build install
 
+WORKDIR /
+
 # The notconf-release stage starts from an "empty" image and installs only the
 # bare minimum required to run the notconf applications. In general Python is
 # not required for netopeer or sysrepo, but the current operational data loading
