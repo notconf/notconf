@@ -116,10 +116,10 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/* /root/.cache
 
 COPY disable-nacm.xml /
-RUN sysrepocfg --edit=disable-nacm.xml -d startup --module ietf-netconf-acm -v4
+RUN sysrepocfg --edit=/disable-nacm.xml -d startup --module ietf-netconf-acm -v4
 
 COPY admin.xml /
-RUN sysrepocfg --edit=admin.xml -d startup --module ietf-netconf-server -v4
+RUN sysrepocfg --edit=/admin.xml -d startup --module ietf-netconf-server -v4
 
 COPY *.sh /
 COPY load-oper-data.py /
