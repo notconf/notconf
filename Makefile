@@ -78,12 +78,17 @@ clone-or-update:
 # keys being the project names and the values being the git commit hash or
 # branch name. If the branch name is not defined for a project, the default is
 # to use the branch name from the top level dictionary.
-PIN_NAME?=2025-07-30
+PIN_NAME?=2025-08-04-rousette
 clone-deps:
 	$(MAKE) clone-or-update REPOSITORY=https://github.com/CESNET/libyang.git BRANCH=$(shell jq --raw-output '."$(PIN_NAME)"."libyang" // "$(PIN_NAME)"' versions.json)
 	$(MAKE) clone-or-update REPOSITORY=https://github.com/sysrepo/sysrepo.git BRANCH=$(shell jq --raw-output '."$(PIN_NAME)"."sysrepo" // "$(PIN_NAME)"' versions.json)
 	$(MAKE) clone-or-update REPOSITORY=https://github.com/CESNET/libnetconf2.git BRANCH=$(shell jq --raw-output '."$(PIN_NAME)"."libnetconf2" // "$(PIN_NAME)"' versions.json)
 	$(MAKE) clone-or-update REPOSITORY=https://github.com/CESNET/netopeer2.git BRANCH=$(shell jq --raw-output '."$(PIN_NAME)"."netopeer2" // "$(PIN_NAME)"' versions.json)
+	$(MAKE) clone-or-update REPOSITORY=https://github.com/CESNET/rousette.git BRANCH=$(shell jq --raw-output '."$(PIN_NAME)"."rousette" // "$(PIN_NAME)"' versions.json)
+	$(MAKE) clone-or-update REPOSITORY=https://github.com/CESNET/libyang-cpp.git BRANCH=$(shell jq --raw-output '."$(PIN_NAME)"."libyang-cpp" // "$(PIN_NAME)"' versions.json)
+	$(MAKE) clone-or-update REPOSITORY=https://github.com/sysrepo/sysrepo-cpp.git BRANCH=$(shell jq --raw-output '."$(PIN_NAME)"."sysrepo-cpp" // "$(PIN_NAME)"' versions.json)
+	$(MAKE) clone-or-update REPOSITORY=https://github.com/nghttp2/nghttp2-asio.git BRANCH=$(shell jq --raw-output '."$(PIN_NAME)"."nghttp2-asio" // "$(PIN_NAME)"' versions.json)
+	$(MAKE) clone-or-update REPOSITORY=https://github.com/HowardHinnant/date.git BRANCH=$(shell jq --raw-output '."$(PIN_NAME)"."date" // "v3.0.1"' versions.json)
 
 CONTAINER_BUILD_ARGS=--build-arg SYSREPO_PYTHON_VERSION=$(shell jq --raw-output '."$(PIN_NAME)"."sysrepo-python" // "$(PIN_NAME)"' versions.json) --build-arg LIBYANG_PYTHON_VERSION=$(shell jq --raw-output '."$(PIN_NAME)"."libyang-python" // "$(PIN_NAME)"' versions.json)
 build:
@@ -179,13 +184,60 @@ test-notconf-mount:
 	$(CONTAINER_RUNTIME) cp test/yang-modules $(CNT_PREFIX):/
 	$(CONTAINER_RUNTIME) start $(CNT_PREFIX)
 	$(MAKE) wait-healthy
-	$(CONTAINER_RUNTIME) run -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug netconf-console2 --port 830 --get-config -x /bob/startup | grep Robert
-	$(CONTAINER_RUNTIME) run -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug netconf-console2 --port 830 --ns test=urn:notconf:test --set /test:bob/test:bert=Robert
-	$(CONTAINER_RUNTIME) run -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug netconf-console2 --port 830 --get-config -x /bob/bert | grep Robert
-	$(CONTAINER_RUNTIME) run -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug netconf-console2 --port 830 --get -x /bob/state/great | grep success
-	$(CONTAINER_RUNTIME) run -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug netconf-console2 --port 830 --get-config -x /bob/alice | grep super
+	$(MAKE) test-notconf-netconf
+	$(MAKE) test-notconf-restconf
 	$(MAKE) save-logs
 	$(MAKE) test-stop
+
+test-notconf-netconf:
+	@echo "=== Running NETCONF tests ==="
+	@echo "Testing startup configuration retrieval..."
+	$(CONTAINER_RUNTIME) run -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug netconf-console2 --port 830 --get-config -x /bob/startup | grep Robert
+	@echo "Testing configuration update via NETCONF..."
+	$(CONTAINER_RUNTIME) run -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug netconf-console2 --port 830 --ns test=urn:notconf:test --set /test:bob/test:bert=Robert
+	@echo "Verifying the configuration update..."
+	$(CONTAINER_RUNTIME) run -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug netconf-console2 --port 830 --get-config -x /bob/bert | grep Robert
+	@echo "Testing operational data retrieval..."
+	$(CONTAINER_RUNTIME) run -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug netconf-console2 --port 830 --get -x /bob/state/great | grep success
+	@echo "Testing configuration data with enabled feature..."
+	$(CONTAINER_RUNTIME) run -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug netconf-console2 --port 830 --get-config -x /bob/alice | grep super
+	@echo "=== All NETCONF tests passed ==="
+
+test-notconf-restconf:
+	@echo "=== Running RESTCONF tests ==="
+	$(CONTAINER_RUNTIME) run -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug curl -s http://localhost/.well-known/host-meta | grep -q restconf
+	@echo "Testing YANG library endpoint..."
+	$(CONTAINER_RUNTIME) run -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug curl -sf -u admin:admin http://localhost/restconf/data/ietf-yang-library:modules-state | grep -q modules-state
+	@echo "Testing operational data retrieval..."
+	$(CONTAINER_RUNTIME) run -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug curl -sf -u admin:admin http://localhost/restconf/data/test:bob/state | grep -q great
+	@echo "Testing configuration data retrieval..."
+	$(CONTAINER_RUNTIME) run -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug curl -sf -u admin:admin http://localhost/restconf/data/test:bob | grep -q alice
+	@echo "Testing RESTCONF capabilities..."
+	$(CONTAINER_RUNTIME) run -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug curl -sf -u admin:admin http://localhost/restconf/data/ietf-restconf-monitoring:restconf-state/capabilities | grep -q capability
+	@echo "Testing PATCH operation..."
+	@echo "Sending PATCH request to update test:bob/bert..."
+	$(CONTAINER_RUNTIME) run -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug curl -u admin:admin -X PATCH \
+		-H "Content-Type: application/yang-data+json" \
+		-d '{"test:bob": {"bert": "Updated"}}' \
+		http://localhost/restconf/data/test:bob
+	@echo "Verifying the update via RESTCONF (using NMDA to read from running datastore)..."
+	$(CONTAINER_RUNTIME) run -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug curl -sf -u admin:admin "http://localhost/restconf/ds/ietf-datastores:running/test:bob/bert" | grep -q Updated || \
+		(echo "PATCH test failed - value was not updated"; exit 1)
+	@echo "=== All RESTCONF tests passed ==="
+
+# test-restconf-full: Start a container and run RESTCONF tests
+test-restconf-full: export CNT_PREFIX=test-restconf-$(PNS)
+test-restconf-full:
+	-$(CONTAINER_RUNTIME) rm -f $(CNT_PREFIX)
+	$(CONTAINER_RUNTIME) create --log-driver json-file --name $(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug
+	$(CONTAINER_RUNTIME) cp test/yang-modules $(CNT_PREFIX):/
+	$(CONTAINER_RUNTIME) start $(CNT_PREFIX)
+# Start rousette in the background
+	$(CONTAINER_RUNTIME) exec -d $(CNT_PREFIX) /bin/sh -c "sleep 5 && rousette"
+	$(MAKE) wait-healthy CNT_PREFIX=$(CNT_PREFIX)
+	$(MAKE) test-restconf CNT_PREFIX=$(CNT_PREFIX)
+	$(MAKE) save-logs CNT_PREFIX=$(CNT_PREFIX)
+	$(MAKE) test-stop CNT_PREFIX=$(CNT_PREFIX)
 
 test-stop: CNT_PREFIX?=test-notconf
 test-stop:
@@ -207,6 +259,10 @@ save-logs:
 		$(CONTAINER_RUNTIME) logs --timestamps $${c} > container-logs/$(CONTAINER_RUNTIME)_$${c}.log 2>&1; \
 		$(CONTAINER_RUNTIME) inspect $${c} > container-logs/$(CONTAINER_RUNTIME)_$${c}_inspect.log; \
 		$(CONTAINER_RUNTIME) run -i --rm --network container:$${c} $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug netconf-console2 --port 830 --hello > container-logs/$(CONTAINER_RUNTIME)_$${c}_netconf.log || true; \
+		for logfile in $$($(CONTAINER_RUNTIME) exec $${c} sh -c 'ls /log/*.log'); do \
+			filename=$$(basename $${logfile}); \
+			$(CONTAINER_RUNTIME) cp $${c}:$${logfile} container-logs/$(CONTAINER_RUNTIME)_$${c}_$${filename} 2>/dev/null || true; \
+		done; \
 	done
 
 SHELL=/bin/bash

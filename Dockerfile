@@ -17,6 +17,12 @@ RUN apt-get update \
  && apt-get install -qy pkg-config \
  # common sense tools for debugging
  && apt-get install -qy less neovim git
+ # rousette requires doxygen
+ # TODO: remove this dependency from rousette CMakeLists.txt
+RUN apt-get install -qy doxygen graphviz \
+ && apt-get install -qy libspdlog-dev
+RUN apt-get install -qy libboost-all-dev libnghttp2-dev
+RUN apt-get install -qy libdocopt-dev
 
 COPY /src /src
 
@@ -48,6 +54,40 @@ RUN cmake -B build -D CMAKE_BUILD_TYPE:String=${BUILD_TYPE} && \
   ldconfig && \
   make -C build install
 
+WORKDIR /src/libyang-cpp
+RUN cmake -B build -D CMAKE_BUILD_TYPE:String=${BUILD_TYPE} -D BUILD_TESTING=OFF -D WITH_DOCS=OFF && \
+  make -C build -j && \
+  make -C build install
+
+WORKDIR /src/sysrepo-cpp
+RUN cmake -B build -D CMAKE_BUILD_TYPE:String=${BUILD_TYPE} -D BUILD_TESTING=OFF -D WITH_DOCS=OFF && \
+  make -C build -j && \
+  make -C build install
+
+WORKDIR /src/nghttp2-asio
+RUN cmake -B build -D CMAKE_BUILD_TYPE:String=${BUILD_TYPE} && \
+  make -C build -j && \
+  make -C build install
+
+WORKDIR /src/date
+RUN cmake -B build -D CMAKE_BUILD_TYPE:String=${BUILD_TYPE} -D BUILD_TZ_LIB=ON && \
+  make -C build -j && \
+  make -C build install
+
+WORKDIR /src/rousette
+# Apply IPv4 patch to support IPv4-only environments
+RUN sed -i 's/"::1"/"0.0.0.0"/' src/restconf/main.cpp && \
+  sed -i '/auto server = rousette::restconf::Server/i\    // Listen on all interfaces (0.0.0.0) to support both IPv4 and IPv6\n    // This works even if IPv6 is disabled in the container' src/restconf/main.cpp
+RUN cmake -B build -D CMAKE_BUILD_TYPE:String=${BUILD_TYPE} -D BUILD_TESTING=OFF && \
+  make -C build -j && \
+  make -C build install
+
+# Install rousette YANG modules into sysrepo
+RUN for yang in /src/rousette/yang/*.yang; do \
+    echo "Installing YANG module: $(basename $yang)" && \
+    sysrepoctl -i "$yang" -v4 || exit 1; \
+  done
+
 WORKDIR /
 
 # The notconf-release stage starts from an "empty" image and installs only the
@@ -75,21 +115,33 @@ RUN apt-get update \
  && pip3 install sysrepo==${SYSREPO_PYTHON_VERSION} libyang==${LIBYANG_PYTHON_VERSION} \
  && apt-get -qy remove python3-pip libpcre2-dev \
  && apt-get -qy autoremove \
+# rousette runtime dependencies - only install specific boost libs needed
+ && apt-get install -qy libpam0g libspdlog1.12 \
+    libboost-system1.83.0 libboost-thread1.83.0 libboost-atomic1.83.0 \
+    libdocopt0 \
+# HTTP/2 proxy for rousette
+ && apt-get install -qy nghttp2-proxy \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/* /root/.cache
 
 COPY disable-nacm.xml /
-RUN sysrepocfg --edit=disable-nacm.xml -d startup --module ietf-netconf-acm -v4
+RUN sysrepocfg --edit=/disable-nacm.xml -d startup --module ietf-netconf-acm -v4
 
 COPY admin.xml /
-RUN sysrepocfg --edit=admin.xml -d startup --module ietf-netconf-server -v4
+RUN sysrepocfg --edit=/admin.xml -d startup --module ietf-netconf-server -v4
+
+# rousette authenticates via pam so we need a system user
+# create admin group and user for nacm access control
+run groupadd admin \
+ && useradd --no-create-home -s /usr/sbin/nologin -g admin admin \
+ && echo "admin:admin" | chpasswd
 
 COPY *.sh /
 COPY load-oper-data.py /
 RUN mkdir /yang-modules
 
 ENV YANG_MODULES_DIR=/yang-modules
-EXPOSE 830
+EXPOSE 80 830
 
 CMD /run.sh
 HEALTHCHECK --start-period=30s --interval=5s CMD grep -e 'Listening on .* for SSH connections' /log/netopeer.log
@@ -112,6 +164,8 @@ RUN apt-get update \
  && pip3 install sysrepo==${SYSREPO_PYTHON_VERSION} libyang==${LIBYANG_PYTHON_VERSION} \
  && apt-get -qy remove python3-pip \
  && apt-get -qy autoremove \
+# HTTP/2 proxy for rousette and curl for testing
+ && apt-get install -qy nghttp2-proxy curl \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/* /root/.cache
 
@@ -121,13 +175,19 @@ RUN sysrepocfg --edit=/disable-nacm.xml -d startup --module ietf-netconf-acm -v4
 COPY admin.xml /
 RUN sysrepocfg --edit=/admin.xml -d startup --module ietf-netconf-server -v4
 
+# rousette authenticates via pam so we need a system user
+# create admin group and user for nacm access control
+run groupadd admin \
+ && useradd --no-create-home -s /usr/sbin/nologin -g admin admin \
+ && echo "admin:admin" | chpasswd
+
 COPY *.sh /
 COPY load-oper-data.py /
 RUN mkdir /yang-modules
 
 ENV EDITOR=vim
 ENV YANG_MODULES_DIR=/yang-modules
-EXPOSE 830
+EXPOSE 80 830
 
 CMD /run.sh
 HEALTHCHECK --start-period=30s --interval=5s CMD grep -e 'Listening on .* for SSH connections' /log/netopeer.log

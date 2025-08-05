@@ -1,14 +1,14 @@
 # notconf
 
-notconf is a NETCONF device simulator based on [Netopeer2] and [sysrepo] running
-in a container. A simulator in this case is a NETCONF server that exposes the
-standard NETCONF management interface of the simulated device without actually
-performing and (network) functions.
+notconf is a NETCONF and RESTCONF device simulator based on [Netopeer2], [rousette],
+and [sysrepo] running in a container. A simulator in this case is a server that
+exposes the standard NETCONF and RESTCONF management interfaces of the simulated
+device without actually performing any (network) functions.
 
 The intended use is to provide a light-weight device for testing network
 automation systems that produce configuration or otherwise interface with the
-device over NETCONF. The simulated device consumes few resources in contrast
-with creating a complete virtual machine (router).
+device over NETCONF or RESTCONF. The simulated device consumes few resources in
+contrast with creating a complete virtual machine (router).
 
 If you are familiar with Cisco NSO, notconf is a drop-in replacement for netsim.
 The advantages of notconf over netsim are:
@@ -17,6 +17,7 @@ The advantages of notconf over netsim are:
   than with netsim (no YANG compilation required)
 
 [Netopeer2]: https://github.com/CESNET/Netopeer2
+[rousette]: https://github.com/CESNET/rousette
 [sysrepo]: https://github.com/sysrepo/sysrepo
 
 ## Usage
@@ -26,18 +27,20 @@ The advantages of notconf over netsim are:
 For running the container from a pre-built image the only prerequisite is Docker
 or some other container runtime like Podman. Building the base and custom images
 further requires make, git and xmlstarlet and optionally netconf-console2 for
-NETCONF operations testing. netconf-console2 is also installed in the
-notconf:debug image for convenience. For an definitive list check the GitHub
-action workflow for the `build-notconf-base`.
+NETCONF operations testing. For RESTCONF testing, curl is recommended. Both
+netconf-console2 and curl are installed in the notconf:debug image for convenience.
+For an definitive list check the GitHub action workflow for the `build-notconf-base`.
 
 ### Start a container with custom YANG modules
 
-The base container image `notconf:latest` contains the Netopeer2 installation with
-all of its runtime dependencies. The set of YANG modules included in the NETCONF
-server is the bare minimum to make Netopeer2 work. This is enough for any
-NETCONF client to establish a NETCONF session, but not much else. You will most
-likely want to include your own or vendor YANG modules to simulate a network
-device. In the following example we will use the `test.yang` YANG module
+The base container image `notconf:latest` contains the Netopeer2 (NETCONF) and
+rousette (RESTCONF) installations with all of their runtime dependencies. Since
+both servers use sysrepo as the underlying database, changes made via NETCONF
+are immediately visible via RESTCONF and vice versa. The set of YANG modules
+included in the servers is the bare minimum to make them operational. This is
+enough for any NETCONF/RESTCONF client to establish a session, but not much else.
+You will most likely want to include your own or vendor YANG modules to simulate
+a network device. In the following example we will use the `test.yang` YANG module
 included in this repository in the `test` directory. The vanilla notconf image
 will load all YANG modules found in the `/yang-modules` directory inside the
 container. Therefore the quickest way to use custom modules is to bind mount a
@@ -52,6 +55,7 @@ one pair per line.
 ``` shell
 # start the container and bind mount the `test` directory to `/yang-modules`
 ❯ docker run -d --rm --name notconf-test -v $(pwd)/test/yang-modules:/yang-modules notconf
+
 # verify the NETCONF server supports the test YANG module
 # with netconf-console2 installed on your local machine:
 ❯ netconf-console2 --host $(docker inspect notconf-test --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}') --port 830 --get /modules-state
@@ -67,6 +71,17 @@ one pair per line.
     </module>
   </modules-state>
 </data>
+
+# verify the RESTCONF server is operational and supports the test module
+❯ docker run -i --network container:notconf-test ghcr.io/notconf/notconf:debug curl -s -u admin:admin http://localhost/restconf/data/test:bob
+{
+  "test:bob": {
+    "startup": "Robert!",
+    "state": {
+      "great": "success"
+    }
+  }
+}
 ```
 
 ### Compose a custom notconf image with custom YANG modules
@@ -133,7 +148,7 @@ platforms:
 
 ### Mocking startup and operational datastore
 
-In addition to the obvious NETCONF interface for modifying the running
+In addition to the NETCONF and RESTCONF interfaces for modifying the running
 configuration, notconf also allows users to modify startup configuration and
 operational (config false) data.
 
@@ -164,7 +179,7 @@ The script will block until the process is complete.
 ```shell
 # start the container and bind mount the `test` directory to `/yang-modules`
 ❯ docker run -d --rm --name notconf-test -v $(pwd)/test/yang-modules:/yang-modules notconf
-# verify operational data in test/yang-modules/operational/test-oper.xml is present
+# verify operational data in test/yang-modules/operational/test-oper.xml is present via NETCONF
 ❯ docker run -i --network container:notconf-test ghcr.io/notconf/notconf:debug netconf-console2 --port 830 --get -x /bob
 <?xml version='1.0' encoding='UTF-8'?>
 <data xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
@@ -175,6 +190,13 @@ The script will block until the process is complete.
     </state>
   </bob>
 </data>
+# The same data is also available via RESTCONF
+❯ docker run -i --network container:notconf-test ghcr.io/notconf/notconf:debug curl -s -u admin:admin http://localhost/restconf/data/test:bob/state
+{
+  "test:state": {
+    "great": "success"
+  }
+}
 # now you can modify the files in test/yang-modules/operational and observe the changes
 #
 # for test scripts, if you want to make sure operational data update is done, use the wait-operational-sync.sh script
@@ -226,11 +248,26 @@ the build prerequisites and running the make recipes:
 
 - [ ] Automatically build composed images for more platforms (+ versions)
 
-### Debugging sysrepo and Netopeer2
+### RESTCONF Access
 
-All the heavy lifting of providing a NETCONF server is done by Netopeer2 and
-sysrepo, so this repository does not contain much code. The base notconf image
-includes the dependencies compiled with the "Release" option. If you need to
-troubleshoot some behavior of the NETCONF server it may be beneficial to use the
-binaries compiled with the "Debug" options. The `notconf:debug` image is
-automatically built and tagged in the build process.
+The RESTCONF server (rousette) listens on port 10080 internally and is made accessible
+on port 80 through an HTTP/2 reverse proxy (nghttpx). The proxy forwards requests to
+specific paths (`/restconf/`, `/yang/`, `/streams/`, `/.well-known/`) to rousette using
+the HTTP/2 protocol. This setup allows clients to connect using standard HTTP/1.1 on
+port 80, while maintaining HTTP/2 communication with rousette. Authentication uses the
+same credentials as NETCONF (default: admin/admin).
+
+### Debugging sysrepo, Netopeer2 and rousette
+
+All the heavy lifting of providing NETCONF and RESTCONF servers is done by Netopeer2,
+rousette, and sysrepo, so this repository does not contain much code. The base notconf
+image includes the dependencies compiled with the "Release" option. If you need to
+troubleshoot some behavior of the servers it may be beneficial to use the binaries
+compiled with the "Debug" options. The `notconf:debug` image is automatically built
+and tagged in the build process.
+
+Logs from all services are available via standard container logs (`docker logs <container>`)
+or can be found in the `/log` directory inside the container:
+- `/log/netopeer2.log` - NETCONF server logs
+- `/log/rousette.log` - RESTCONF server logs
+- `/log/nghttpx.log` - HTTP/2 proxy logs
