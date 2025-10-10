@@ -20,6 +20,7 @@ jobs:
       - id: set-yang-paths
         run: |
           echo "yang_paths=[ \
+          \"yang/standard/ietf/RFC\", \
           \"yang/vendor/nokia/7x50_YangModels/latest_sros_21.10\", \
           \"yang/vendor/nokia/7x50_YangModels/latest_sros_22.2\", \
           \"yang/vendor/juniper/21.1/21.1R1/junos\", \

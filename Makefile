@@ -350,7 +350,11 @@ clone-yangmodels:
 # The conditions below knows how to extract the platform and version from the
 # yangmodules/yang paths. If none match, default to just using YANG_PATH.
 EXPLODED_YANG_PATH=$(subst /, ,$(YANG_PATH))
-ifneq (,$(findstring latest_sros,$(YANG_PATH)))
+ifneq (,$(findstring standard/ietf,$(YANG_PATH)))
+# yang/standard/ietf/RFC
+	COMPOSE_IMAGE_NAME?=ietf
+	COMPOSE_IMAGE_TAG_PREFIX?=latest
+else ifneq (,$(findstring latest_sros,$(YANG_PATH)))
 	COMPOSE_IMAGE_NAME?=sros
 	COMPOSE_IMAGE_TAG_PREFIX?=$(subst latest_sros_,,$(filter latest_sros%,$(EXPLODED_YANG_PATH)))
 else ifneq (,$(findstring native/conf-and-rpcs/junos,$(YANG_PATH)))
