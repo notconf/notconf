@@ -22,7 +22,21 @@ The advantages of notconf over netsim are:
 
 ## Usage
 
-### Prerequisites
+There are pre-built images of notconf for some common network operating
+systems, like:
+- Cisco IOS XR
+- IETF device models
+- Juniper JUNOS
+- Nokia SROS
+
+See https://github.com/orgs/notconf/packages?repo_name=notconf for the complete
+list. Run these images with for example:
+- docker run -itd --name notconf1 ghcr.io/notconf/notconf-cisco-xr:2411
+
+And you will get a container that looks like an IOS XR 24.1.1 router over
+NETCONF & RESTCONF. Log in with admin/admin.
+
+### Build Prerequisites
 
 For running the container from a pre-built image the only prerequisite is Docker
 or some other container runtime like Podman. Building the base and custom images
