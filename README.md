@@ -219,6 +219,41 @@ Triggering operational data sync
 Operational data sync done!
 ```
 
+### Custom scripts
+
+Any executable files placed in the `/yang-modules/scripts` directory will be
+launched in the background when the container starts. This can be used to run
+custom logic alongside the NETCONF/RESTCONF servers, such as periodic data
+updates or integration hooks.
+
+Scripts can be written in any language as long as they have the executable bit
+set and a proper shebang line. For Python scripts, use `#!/usr/bin/env -S python3 -u`
+to ensure unbuffered output.
+
+Script output is logged to both stdout and `/log/<script_name>.log`.
+
+Example Python script (`yang-modules/scripts/hello.py`):
+
+```python
+#!/usr/bin/env -S python3 -u
+import time
+
+while True:
+    print("hello from custom script")
+    time.sleep(5)
+```
+
+```shell
+# start the container with scripts
+❯ docker run -d --rm --name notconf-test -v $(pwd)/test/yang-modules:/yang-modules notconf
+# verify script output in container logs
+❯ docker logs notconf-test
+...
+Launching hello.py in background...
+hello from custom script
+hello from custom script
+```
+
 ## Troubleshooting and development
 
 ### Multi-arch support and building
