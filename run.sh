@@ -4,6 +4,7 @@
 /load-startup-config.sh
 /watch.sh /yang-modules/operational python3 /load-oper-data.py --path /yang-modules/operational --sync-file /tmp/sync &
 mkdir -p /log
+/runner.sh
 
 # Start rousette RESTCONF server
 rousette 2>&1 | tee /log/rousette.log &
