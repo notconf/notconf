@@ -165,6 +165,7 @@ test-yangmodels:
 	$(MAKE) test-compose-yang YANG_PATH=yang/vendor/juniper/23.4/23.4R1/native/conf-and-rpcs/junos
 	$(MAKE) test-compose-yang YANG_PATH=yang/vendor/cisco/xr/771
 	$(MAKE) test-compose-yang YANG_PATH=yang/vendor/cisco/xr/2411
+	$(MAKE) test-compose-yang YANG_PATH=yang/vendor/cisco/nx/10.4-4
 
 # test-notconf-mount: start a notconf:latest container with the test YANG
 # modules mounted to /yang-modules in the container. All YANG modules and XML

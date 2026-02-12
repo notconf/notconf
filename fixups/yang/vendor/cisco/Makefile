@@ -21,6 +21,7 @@ EXCLUDE+=$(YANG_PATH)/cisco-xr-openconfig-%
 EXCLUDE+=$(YANG_PATH)/openconfig-%
 EXCLUDE+=$(YANG_PATH)/Cisco-IOS-XR-openconfig-%
 EXCLUDE+=$(YANG_PATH)/cisco-xr-ietf-%-deviations.yang
+EXCLUDE+=$(YANG_PATH)/cisco-nx-openconfig-%
 # Skip IETF modules
 EXCLUDE+=$(YANG_PATH)/ietf-netconf.yang
 EXCLUDE+=$(YANG_PATH)/iana-crypt-hash.yang
