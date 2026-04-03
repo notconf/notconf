@@ -165,6 +165,7 @@ test-yangmodels:
 	$(MAKE) test-compose-yang YANG_PATH=yang/vendor/juniper/23.4/23.4R1/native/conf-and-rpcs/junos
 	$(MAKE) test-compose-yang YANG_PATH=yang/vendor/cisco/xr/771
 	$(MAKE) test-compose-yang YANG_PATH=yang/vendor/cisco/xr/2411
+	$(MAKE) test-compose-yang YANG_PATH=yang/vendor/cisco/nx/10.4-4
 
 # test-notconf-mount: start a notconf:latest container with the test YANG
 # modules mounted to /yang-modules in the container. All YANG modules and XML
@@ -390,7 +391,7 @@ compose-notconf-yang:
 	rm -rf $(COMPOSE_PATH)
 	mkdir -p $(COMPOSE_PATH)
 	@set -e; \
-	for fixup in `find fixups -type f -name Makefile -printf "%d %P\n" | sort -n -r | awk '{ print $$2; }'`; do \
+	for fixup in `find fixups -type f -name Makefile | sed 's#^fixups/##' | awk -F/ '{ print NF "\t" $$0; }' | sort -nr | cut -f2-`; do \
 		echo "Checking if $(YANG_PATH) matches $${fixup}"; \
 		if [[ "$(YANG_PATH)" =~ ^$$(dirname $${fixup}).* ]]; then \
 			echo "Executing fixups/$${fixup}"; \
@@ -416,7 +417,7 @@ test-composed-notconf-yang:
 	$(MAKE) wait-healthy
 	$(CONTAINER_RUNTIME) run -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug netconf-console2 --port 830 --hello
 	$(CONTAINER_RUNTIME) run -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug netconf-console2 --port 830 --get -x /modules-state
-	set -e; for fixup in `find fixups -type f -name Makefile -printf "%d %P\n" | sort -n -r | awk '{ print $$2; }'`; do \
+	set -e; for fixup in `find fixups -type f -name Makefile | sed 's#^fixups/##' | awk -F/ '{ print NF "\t" $$0; }' | sort -nr | cut -f2-`; do \
 		if [[ "$(YANG_PATH)" =~ ^$$(dirname $${fixup}).* ]] && make -C $$(dirname "fixups/$${fixup}") -n test >/dev/null 2>&1; then \
 			echo "Executing test in fixups/$${fixup}"; \
 			make -C $$(dirname "fixups/$${fixup}") test; \
