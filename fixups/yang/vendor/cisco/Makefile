@@ -14,6 +14,10 @@ EXCLUDE+=$(YANG_PATH)/Cisco-IOS-XR-sysadmin-eobc-iosxrwbd.yang
 # References the module above
 EXCLUDE+=$(YANG_PATH)/Cisco-IOS-XR-sysadmin-controllers-iosxrwbd.yang
 endif
+# Module already defined in Cisco-IOS-XR-appmgr-act.yang
+EXCLUDE+=$(YANG_PATH)/Cisco-IOS-XR-appmgr-act-lnt.yang
+# Broken refinement: target node "hello-params/tls-versions/max" in grouping "tls-client-grouping"
+EXCLUDE+=$(YANG_PATH)/ietf-udp-notif-transport.yang
 
 # Generic fixups that apply to any version
 # OpenConfig is broken
