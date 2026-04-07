@@ -28,6 +28,7 @@ jobs:
           \"yang/vendor/cisco/xr/762\", \
           \"yang/vendor/cisco/xr/771\", \
           \"yang/vendor/cisco/xr/2411\", \
+          \"yang/vendor/cisco/xr/2531\", \
           \"yang/vendor/cisco/nx/10.4-4\" \
           ]" >> $GITHUB_OUTPUT
 
