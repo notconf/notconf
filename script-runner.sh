@@ -1,4 +1,6 @@
 #!/bin/bash
+set -e
+
 SCRIPT_DIR="yang-modules/scripts"
 LOG_DIR="/log"
 launched=0
@@ -16,6 +18,7 @@ if [ -d "$SCRIPT_DIR" ]; then
         sleep 1
         if ! kill -0 "$script_pid" 2>/dev/null; then
             echo "Error: $script_name exited immediately."
+            exit 1
         fi
         launched=1
     done

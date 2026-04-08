@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 /install-yang-modules.sh
 /load-startup-config.sh
 /watch.sh /yang-modules/operational python3 /load-oper-data.py --path /yang-modules/operational --sync-file /tmp/sync &
