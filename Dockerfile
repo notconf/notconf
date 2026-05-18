@@ -88,6 +88,18 @@ RUN for yang in /src/rousette/yang/*.yang; do \
     sysrepoctl -i "$yang" -v4 || exit 1; \
   done
 
+# Include notconf and component LICENSE files in /notconf/license/
+RUN mkdir -p /notconf/license && \
+  find /src -mindepth 2 -maxdepth 2 -type f \( -name 'LICENSE*' -o -name 'COPYING*' \) | sort | while read -r license; do \
+    component="$(basename "$(dirname "$license")")"; \
+    target="/notconf/license/LICENSE-${component}"; \
+    if [ -f "$target" ]; then \
+      printf '\n\n===== %s =====\n\n' "$(basename "$license")" >> "$target"; \
+    fi; \
+    cat "$license" >> "$target"; \
+  done
+COPY LICENSE /notconf/license/LICENSE-notconf
+
 WORKDIR /
 
 # The notconf-release stage starts from an "empty" image and installs only the
@@ -104,6 +116,7 @@ ARG LIBYANG_PYTHON_VERSION
 
 COPY --from=builder /usr/local /usr/local
 COPY --from=builder /etc/sysrepo /etc/sysrepo
+COPY --from=builder /notconf/license /notconf/license
 RUN ldconfig
 
 RUN apt-get update \
