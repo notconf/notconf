@@ -1,5 +1,7 @@
 # notconf
 
+[![License: BSD-3-Clause](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](LICENSE)
+
 notconf is a NETCONF and RESTCONF device simulator based on [Netopeer2], [rousette],
 and [sysrepo] running in a container. A simulator in this case is a server that
 exposes the standard NETCONF and RESTCONF management interfaces of the simulated
@@ -12,7 +14,7 @@ contrast with creating a complete virtual machine (router).
 
 If you are familiar with Cisco NSO, notconf is a drop-in replacement for netsim.
 The advantages of notconf over netsim are:
-- notconf is open source and based on open source software
+- notconf is open source (BSD-3-Clause) and based on open source software
 - building a custom image with custom (vendor) YANG modules is easy and faster
   than with netsim (no YANG compilation required)
 
@@ -292,6 +294,10 @@ the build prerequisites and running the make recipes:
 # build the base images
 ❯ make build
 ```
+
+## License
+
+notconf is open source software, released under the [BSD 3-Clause License](LICENSE).
 
 ## WIP and planned work
 
