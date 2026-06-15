@@ -312,6 +312,13 @@ the HTTP/2 protocol. This setup allows clients to connect using standard HTTP/1.
 port 80, while maintaining HTTP/2 communication with rousette. Authentication uses the
 same credentials as NETCONF (default: admin/admin).
 
+### IPv4/IPv6 dual-stack
+
+netopeer2 and rousette both bind the IPv6 wildcard `::`. This will bind the
+listening socket on both IPv4 and IPv6 on most Linux systems. The only
+unsupported case is if IPv6 was altogether disabled in the kernel
+(`CONFIG_IPV6=n`) or disabled at boot (`ipv6.disable=1`).
+
 ### Debugging sysrepo, Netopeer2 and rousette
 
 All the heavy lifting of providing NETCONF and RESTCONF servers is done by Netopeer2,

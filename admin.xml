@@ -4,6 +4,10 @@
       <endpoint>
         <name>default-ssh</name>
         <ssh>
+          <tcp-server-parameters>
+            <!-- IPv6 wildcard (dual-stack); overrides merge_config.sh's 0.0.0.0 -->
+            <local-address>::</local-address>
+          </tcp-server-parameters>
           <ssh-server-parameters>
             <client-authentication>
               <users>
