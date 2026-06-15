@@ -58,5 +58,19 @@
         "sysrepo-cpp": "v6",
         "nghttp2-asio": "e877868abe06a83ed0a6ac6e245c07f6f20866b5",
         "date": "v3.0.4"
+    },
+    "2026-06-16": {
+        "libyang": "5435b592f82182b54612b1c7af1e4b2b6ce8fad1",
+        "sysrepo": "e92dd4fced5a91b0ae4f7edb20ade978b5f64f91",
+        "libnetconf2": "v4.2.14",
+        "netopeer2": "v2.8.2",
+        "libssh": "stable-0.11",
+        "libyang-python": "5.0.0",
+        "sysrepo-python": "2.0.0",
+        "rousette": "ed0736decb6c2937ac41236f7a3adc9b2a213230",
+        "libyang-cpp": "9e70a23e174edfcbe2ae58e36be17fcc282e28d9",
+        "sysrepo-cpp": "ebb6627ea0719d3f4ed992486e33ba075a437bc1",
+        "nghttp2-asio": "e877868abe06a83ed0a6ac6e245c07f6f20866b5",
+        "date": "v3.0.4"
     }
 }
