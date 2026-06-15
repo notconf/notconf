@@ -4,16 +4,21 @@
       <endpoint>
         <name>default-ssh</name>
         <ssh>
-          <tcp-server-parameters>
-            <!-- IPv6 wildcard (dual-stack); overrides merge_config.sh's 0.0.0.0 -->
-            <local-address>::</local-address>
+          <!-- Replace merge_config.sh's default local-bind (0.0.0.0); "::" is a
+               single dual-stack listener. -->
+          <tcp-server-parameters xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0" nc:operation="replace">
+            <local-bind>
+              <local-address>::</local-address>
+            </local-bind>
           </tcp-server-parameters>
           <ssh-server-parameters>
             <client-authentication>
               <users>
                 <user>
                   <name>admin</name>
-                  <password>$0$admin</password>
+                  <password>
+                    <hashed-password>$0$admin</hashed-password>
+                  </password>
                 </user>
               </users>
             </client-authentication>
