@@ -65,6 +65,9 @@ RUN cmake -B build -D CMAKE_BUILD_TYPE:String=${BUILD_TYPE} -D BUILD_TESTING=OFF
   make -C build install
 
 WORKDIR /src/nghttp2-asio
+# Drop AI_ADDRCONFIG: getaddrinfo("::") fails with only loopback IPv6 (::1),
+# crashing rousette on bind. AI_PASSIVE alone lets it bind "::" reliably.
+RUN sed -i 's/tcp::resolver::query query(address, port);/tcp::resolver::query query(address, port, tcp::resolver::query::passive);/' lib/asio_server.cc
 RUN cmake -B build -D CMAKE_BUILD_TYPE:String=${BUILD_TYPE} && \
   make -C build -j && \
   make -C build install
@@ -75,9 +78,8 @@ RUN cmake -B build -D CMAKE_BUILD_TYPE:String=${BUILD_TYPE} -D BUILD_TZ_LIB=ON &
   make -C build install
 
 WORKDIR /src/rousette
-# Apply IPv4 patch to support IPv4-only environments
-RUN sed -i 's/"::1"/"0.0.0.0"/' src/restconf/main.cpp && \
-  sed -i '/auto server = rousette::restconf::Server/i\    // Listen on all interfaces (0.0.0.0) to support both IPv4 and IPv6\n    // This works even if IPv6 is disabled in the container' src/restconf/main.cpp
+# Bind "::" (dual-stack) instead of upstream "::1" (loopback only)
+RUN sed -i 's/"::1"/"::"/' src/restconf/main.cpp
 RUN cmake -B build -D CMAKE_BUILD_TYPE:String=${BUILD_TYPE} -D BUILD_TESTING=OFF && \
   make -C build -j && \
   make -C build install
