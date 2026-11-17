@@ -153,11 +153,13 @@ run groupadd admin \
 
 COPY *.sh /
 COPY load-oper-data.py /
-RUN mkdir /yang-modules
+RUN mkdir /yang-modules /var/lib/sysrepo-shm
 
 ENV YANG_MODULES_DIR=/yang-modules
+ENV SYSREPO_SHM_DIR=/var/lib/sysrepo-shm
 EXPOSE 80 830
 
+WORKDIR /root
 CMD /run.sh
 HEALTHCHECK --start-period=30s --interval=5s CMD grep -e 'Listening on .* for SSH connections' /log/netopeer.log
 
@@ -198,11 +200,13 @@ run groupadd admin \
 
 COPY *.sh /
 COPY load-oper-data.py /
-RUN mkdir /yang-modules
+RUN mkdir /yang-modules /var/lib/sysrepo-shm
 
 ENV EDITOR=vim
 ENV YANG_MODULES_DIR=/yang-modules
+ENV SYSREPO_SHM_DIR=/var/lib/sysrepo-shm
 EXPOSE 80 830
 
+WORKDIR /root
 CMD /run.sh
 HEALTHCHECK --start-period=30s --interval=5s CMD grep -e 'Listening on .* for SSH connections' /log/netopeer.log
