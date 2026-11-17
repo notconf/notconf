@@ -158,6 +158,7 @@ RUN mkdir /yang-modules
 ENV YANG_MODULES_DIR=/yang-modules
 EXPOSE 80 830
 
+WORKDIR /root
 CMD /run.sh
 HEALTHCHECK --start-period=30s --interval=5s CMD grep -e 'Listening on .* for SSH connections' /log/netopeer.log
 
@@ -204,5 +205,6 @@ ENV EDITOR=vim
 ENV YANG_MODULES_DIR=/yang-modules
 EXPOSE 80 830
 
+WORKDIR /root
 CMD /run.sh
 HEALTHCHECK --start-period=30s --interval=5s CMD grep -e 'Listening on .* for SSH connections' /log/netopeer.log

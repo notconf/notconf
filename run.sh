@@ -16,4 +16,4 @@ nghttpx --daemon --accesslog-file=/log/nghttpx.log --add-forwarded=for -f '*,80;
     -b '127.0.0.1,10080;/restconf/:/yang/:/streams/:/.well-known/;proto=h2'
 
 # Start netopeer2-server in foreground
-exec netopeer2-server -U -d -v2 2>&1 | tee /log/netopeer.log
+exec netopeer2-server -U unix-socket:/var/run/netopeer2-server.sock -d -v2 2>&1 | tee /log/netopeer.log

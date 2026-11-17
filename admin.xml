@@ -25,6 +25,13 @@
           </ssh-server-parameters>
         </ssh>
       </endpoint>
+      <endpoint>
+        <!-- Socket path is set by run.sh with -U -->
+        <name>unix-socket</name>
+        <unix xmlns="urn:cesnet:libnetconf2-netconf-server">
+          <hidden-path/>
+        </unix>
+      </endpoint>
     </endpoints>
   </listen>
 </netconf-server>
