@@ -3584,7 +3584,7 @@ Built on Wed Apr 6 13:51:37 PDT 2022 by builder in /builds/c/222B/R2/panos/main/
     </memory-pools>
     <mda>
       <mda-slot>1</mda-slot>
-      <equipped-type>x2-100g-tun</equipped-type>
+      <equipped-type>x4-100g-cfp2</equipped-type>
       <maximum-ports>2</maximum-ports>
       <equipped-ports>2</equipped-ports>
       <transmit-timing-selected>not-applicable</transmit-timing-selected>
@@ -3652,7 +3652,7 @@ Built on Wed Apr 6 13:51:37 PDT 2022 by builder in /builds/c/222B/R2/panos/main/
     </mda>
     <mda>
       <mda-slot>2</mda-slot>
-      <equipped-type>x2-100g-tun</equipped-type>
+      <equipped-type>x4-100g-cfp2</equipped-type>
       <maximum-ports>2</maximum-ports>
       <equipped-ports>2</equipped-ports>
       <transmit-timing-selected>not-applicable</transmit-timing-selected>
@@ -5015,7 +5015,7 @@ Built on Wed Apr 6 13:51:37 PDT 2022 by builder in /builds/c/222B/R2/panos/main/
     </memory-pools>
     <mda>
       <mda-slot>1</mda-slot>
-      <equipped-type>cx2-100g-cfp</equipped-type>
+      <equipped-type>x4-100g-cfp2</equipped-type>
       <maximum-ports>2</maximum-ports>
       <equipped-ports>2</equipped-ports>
       <transmit-timing-selected>not-applicable</transmit-timing-selected>
@@ -5083,7 +5083,7 @@ Built on Wed Apr 6 13:51:37 PDT 2022 by builder in /builds/c/222B/R2/panos/main/
     </mda>
     <mda>
       <mda-slot>2</mda-slot>
-      <equipped-type>cx2-100g-cfp</equipped-type>
+      <equipped-type>x4-100g-cfp2</equipped-type>
       <maximum-ports>2</maximum-ports>
       <equipped-ports>2</equipped-ports>
       <transmit-timing-selected>not-applicable</transmit-timing-selected>
