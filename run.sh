@@ -2,6 +2,9 @@
 
 set -e
 
+# sysrepo SHM files are on disk and would survive a container restart
+[ -z "$SYSREPO_SHM_DIR" ] || rm -f "$SYSREPO_SHM_DIR"/sr*
+
 /install-yang-modules.sh
 /load-startup-config.sh
 /watch.sh /yang-modules/operational python3 /load-oper-data.py --path /yang-modules/operational --sync-file /tmp/sync &
