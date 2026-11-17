@@ -159,8 +159,8 @@ test:
 
 test-yangmodels:
 	> composed-notconf.txt
-	$(MAKE) test-compose-yang YANG_PATH=yang/vendor/nokia/7x50_YangModels/latest_sros_21.20
-	$(MAKE) test-compose-yang YANG_PATH=yang/vendor/nokia/7x50_YangModels/latest_sros_22.2
+	$(MAKE) test-compose-yang YANG_PATH=yang/vendor/nokia/7x50_YangModels/latest_sros_25.10
+	$(MAKE) test-compose-yang YANG_PATH=yang/vendor/nokia/7x50_YangModels/latest_sros_26.10
 	$(MAKE) test-compose-yang YANG_PATH=yang/vendor/juniper/21.1/21.1R1/junos
 	$(MAKE) test-compose-yang YANG_PATH=yang/vendor/juniper/23.4/23.4R1/native/conf-and-rpcs/junos
 	$(MAKE) test-compose-yang YANG_PATH=yang/vendor/cisco/xr/771
