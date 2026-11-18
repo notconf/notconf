@@ -365,12 +365,22 @@ else
 	exit 1
 endif
 
-.PHONY: clone-yangmodels sparse-clone compose-notconf-yang test-compose-yang test-composed-notconf-yang
+.PHONY: clone-yangmodels clone-yangmodels-sparse sparse-clone compose-notconf-yang test-compose-yang test-composed-notconf-yang
 
-# clone-yangmodels: clones the yangmodels/yang repository with only YANG_PATHS
-# checked out. Run again to update. The juniper fixups also read the common
-# directory next to YANG_PATH.
+# clone-yangmodels: clones and checks out the yangmodels/yang repository
+# including submodules
 clone-yangmodels:
+	if [ ! -d yang ]; then \
+		git clone --depth 1 --recurse-submodules=vendor --shallow-submodules https://github.com/yangmodels/yang.git; \
+	else \
+		cd yang; \
+		git pull && git submodule update --recursive --recommend-shallow; \
+	fi
+
+# clone-yangmodels-sparse: clones the yangmodels/yang repository with only
+# YANG_PATHS checked out, for CI. The juniper fixups also read the common
+# directory next to YANG_PATH.
+clone-yangmodels-sparse:
 	$(MAKE) sparse-clone REPOSITORY=https://github.com/yangmodels/yang.git DIR=yang \
 		SPARSE_DIRS="$(patsubst yang/%,%,$(YANG_PATHS) $(addsuffix common,$(dir $(filter yang/vendor/juniper/%,$(YANG_PATHS)))))"
 
