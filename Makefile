@@ -154,15 +154,14 @@ create-release-yangmodels-manifests:
 push-release-yangmodels-manifests:
 	set -e; for path in $(YANG_PATHS); do $(MAKE) push-release-composed-notconf-manifest YANG_PATH=$${path}; done
 
-# Parallel builds append to composed-notconf.txt in any order, so dedupe with sort
 tag-release-composed-notconf: composed-notconf.txt
-	for tag in $$(sort -u $<); do release_tag=$$(echo $${tag} | sed 's/-$(IMAGE_TAG)$$/$(RELEASE_IMAGE_TAG)/'); $(CONTAINER_RUNTIME) tag $${tag} $${release_tag}; done
+	for tag in $$(uniq $<); do release_tag=$$(echo $${tag} | sed 's/-$(IMAGE_TAG)$$/$(RELEASE_IMAGE_TAG)/'); $(CONTAINER_RUNTIME) tag $${tag} $${release_tag}; done
 
 push-release-composed-notconf: composed-notconf.txt
-	for release_tag in $$(sed 's/-$(IMAGE_TAG)$$/$(RELEASE_IMAGE_TAG)/g' $< | sort -u); do $(CONTAINER_RUNTIME) push $${release_tag}; done
+	for release_tag in $$(sed 's/-$(IMAGE_TAG)$$/$(RELEASE_IMAGE_TAG)/g' $< | uniq); do $(CONTAINER_RUNTIME) push $${release_tag}; done
 
 push-composed-notconf: composed-notconf.txt
-	for tag in $$(sort -u $<); do $(CONTAINER_RUNTIME) push $${tag}; done
+	for tag in $$(uniq $<); do $(CONTAINER_RUNTIME) push $${tag}; done
 
 test:
 	$(MAKE) test-notconf-mount
@@ -182,10 +181,14 @@ YANG_PATHS = \
 	yang/vendor/cisco/nx/10.4-4
 
 # test-yangmodels: build and test the images for all YANG_PATHS. Run with -j to
-# build them in parallel, e.g. make -j4 -Orecurse test-yangmodels
+# build them in parallel. With GNU make 4+ each image's output is printed as one
+# block when the image is done; passing -O on the command line would instead
+# hold all output until the end.
 TEST_YANGMODELS = $(addprefix test-compose-yang/,$(YANG_PATHS))
 .PHONY: test-yangmodels $(TEST_YANGMODELS) build-perftest-image
-test-yangmodels: $(TEST_YANGMODELS)
+test-yangmodels:
+	> composed-notconf.txt
+	$(MAKE) $(if $(filter output-sync,$(.FEATURES)),--output-sync=recurse) $(TEST_YANGMODELS)
 
 # Fixup tests rebuild the perftest image; build it first so they only hit the cache
 $(TEST_YANGMODELS): test-compose-yang/%: build-perftest-image
