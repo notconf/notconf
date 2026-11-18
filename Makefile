@@ -181,10 +181,14 @@ YANG_PATHS = \
 	yang/vendor/cisco/nx/10.4-4
 
 # test-yangmodels: build and test the images for all YANG_PATHS. Run with -j to
-# build them in parallel, e.g. make -j4 -Orecurse test-yangmodels
+# build them in parallel. With GNU make 4+ each image's output is printed as one
+# block when the image is done; passing -O on the command line would instead
+# hold all output until the end.
 TEST_YANGMODELS = $(addprefix test-compose-yang/,$(YANG_PATHS))
 .PHONY: test-yangmodels $(TEST_YANGMODELS) build-perftest-image
-test-yangmodels: $(TEST_YANGMODELS)
+test-yangmodels:
+	> composed-notconf.txt
+	$(MAKE) $(if $(filter output-sync,$(.FEATURES)),--output-sync=recurse) $(TEST_YANGMODELS)
 
 # Fixup tests rebuild the perftest image; build it first so they only hit the cache
 $(TEST_YANGMODELS): test-compose-yang/%: build-perftest-image

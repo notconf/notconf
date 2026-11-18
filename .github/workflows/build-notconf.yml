@@ -104,8 +104,8 @@ jobs:
       run: make pull
 
     - name: Run tests
-      # Output is grouped per image; keep going to report all failing images
-      run: make -j"$(nproc)" --output-sync=recurse --keep-going test-yangmodels
+      # Keep going to report all failing images
+      run: make -j"$(nproc)" --keep-going test-yangmodels
 
     - name: Save logs for running containers
       if: always()
