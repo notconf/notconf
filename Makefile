@@ -365,16 +365,33 @@ else
 	exit 1
 endif
 
-.PHONY: clone-yangmodels compose-notconf-yang test-compose-yang test-composed-notconf-yang
+.PHONY: clone-yangmodels sparse-clone compose-notconf-yang test-compose-yang test-composed-notconf-yang
 
-# clone-yangmodels: clones and checks out the yangmodels/yang repository
-# including submodules
+# clone-yangmodels: clones the yangmodels/yang repository with only YANG_PATHS
+# checked out. Run again to update. The juniper fixups also read the common
+# directory next to YANG_PATH.
 clone-yangmodels:
-	if [ ! -d yang ]; then \
-		git clone --depth 1 --recurse-submodules=vendor --shallow-submodules https://github.com/yangmodels/yang.git; \
-	else \
-		cd yang; \
-		git pull && git submodule update --recursive --recommend-shallow; \
+	$(MAKE) sparse-clone REPOSITORY=https://github.com/yangmodels/yang.git DIR=yang \
+		SPARSE_DIRS="$(patsubst yang/%,%,$(YANG_PATHS) $(addsuffix common,$(dir $(filter yang/vendor/juniper/%,$(YANG_PATHS)))))"
+
+# sparse-clone: shallow, partial clone of REVISION of REPOSITORY into DIR with
+# only SPARSE_DIRS checked out. Submodules that contain any of SPARSE_DIRS are
+# cloned the same way.
+sparse-clone: REVISION?=HEAD
+sparse-clone:
+	git init -q $(DIR)
+	git -C $(DIR) config remote.origin.url $(REPOSITORY)
+	git -C $(DIR) fetch --depth 1 --filter=blob:none origin $(REVISION)
+	git -C $(DIR) sparse-checkout set $(SPARSE_DIRS)
+	git -C $(DIR) checkout -q --detach FETCH_HEAD
+	if [ -f $(DIR)/.gitmodules ]; then \
+		git -C $(DIR) config -f .gitmodules --get-regexp '\.path$$' | while read -r key path; do \
+			dirs=; for dir in $(SPARSE_DIRS); do case $$dir in $$path/*) dirs="$$dirs $${dir#$$path/}";; esac; done; \
+			if [ -z "$$dirs" ]; then continue; fi; \
+			name=$${key#submodule.}; name=$${name%.path}; \
+			$(MAKE) sparse-clone DIR=$(DIR)/$$path REPOSITORY=$$(git -C $(DIR) config -f .gitmodules submodule.$$name.url) \
+				REVISION=$$(git -C $(DIR) rev-parse HEAD:$$path) SPARSE_DIRS="$$dirs" || exit; \
+		done; \
 	fi
 
 # Set up COMPOSE_IMAGE_* variables by examining the provided YANG_PATH variable.
