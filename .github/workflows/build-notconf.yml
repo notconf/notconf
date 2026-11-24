@@ -12,26 +12,6 @@ permissions:
   packages: write
 
 jobs:
-  prepare:
-    runs-on: ubuntu-24.04
-    outputs:
-      yang_paths: ${{ steps.set-yang-paths.outputs.yang_paths }}
-    steps:
-      - id: set-yang-paths
-        run: |
-          echo "yang_paths=[ \
-          \"yang/standard/ietf/RFC\", \
-          \"yang/vendor/nokia/7x50_YangModels/latest_sros_25.10\", \
-          \"yang/vendor/nokia/7x50_YangModels/latest_sros_26.10\", \
-          \"yang/vendor/juniper/21.1/21.1R1/junos\", \
-          \"yang/vendor/juniper/23.4/23.4R1/native/conf-and-rpcs/junos\", \
-          \"yang/vendor/cisco/xr/762\", \
-          \"yang/vendor/cisco/xr/771\", \
-          \"yang/vendor/cisco/xr/2411\", \
-          \"yang/vendor/cisco/xr/2531\", \
-          \"yang/vendor/cisco/nx/10.4-4\" \
-          ]" >> $GITHUB_OUTPUT
-
   build-notconf-base:
     strategy:
       matrix:
@@ -99,12 +79,9 @@ jobs:
         path: container-logs/
 
   build-yangmodels:
-    needs:
-      - prepare
-      - build-notconf-base
+    needs: build-notconf-base
     strategy:
       matrix:
-        path: ${{ fromJson(needs.prepare.outputs.yang_paths) }}
         arch: [x86_64, aarch64]
     runs-on: ${{ matrix.arch == 'x86_64' && 'ubuntu-24.04' || 'ubuntu-24.04-arm' }}
 
@@ -120,23 +97,15 @@ jobs:
 
     - uses: actions/checkout@v4
 
-    - name: Install test prerequisites
-      run: |
-        which pyang || pip3 install pyang
-        sudo apt-get install -qy xmlstarlet
+    - name: Clone yangmodels
+      run: make clone-yangmodels-sparse
 
-    - name: Cache yangmodels
-      uses: actions/cache@v4
-      with:
-        path: yang
-        key: yang-${{ hashFiles('Makefile') }}
-
-    - name: Update yangmodels
-      run: make clone-yangmodels
+    - name: Pull notconf images
+      run: make pull
 
     - name: Run tests
-      run: |
-        make test-compose-yang YANG_PATH=${{ matrix.path }}
+      # Keep going to report all failing images
+      run: make -j"$(nproc)" --keep-going test-yangmodels
 
     - name: Save logs for running containers
       if: always()
@@ -159,16 +128,11 @@ jobs:
         make tag-release-composed-notconf
         make push-release-composed-notconf
 
-    - name: Compute artifact name and store in output
-      id: artifact-name
-      run: |
-        YANG_PATH=${{ matrix.path }} make print-COMPOSE_IMAGE_NAME print-COMPOSE_IMAGE_TAG >> $GITHUB_OUTPUT
-
     - name: Store container logs in artifact
       uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: container-logs-${{ steps.artifact-name.outputs.COMPOSE_IMAGE_NAME }}-${{ steps.artifact-name.outputs.COMPOSE_IMAGE_TAG }}-${{ matrix.arch }}
+        name: container-logs-yangmodels-${{ matrix.arch }}
         path: container-logs/
 
   create-base-manifest:
@@ -198,11 +162,7 @@ jobs:
   create-composed-manifest:
     if: ${{ github.ref_name == 'main' }}
     needs:
-    - prepare
     - build-yangmodels
-    strategy:
-      matrix:
-        path: ${{ fromJson(needs.prepare.outputs.yang_paths) }}
     runs-on: ubuntu-24.04
     steps:
     - uses: actions/checkout@v4
@@ -215,5 +175,5 @@ jobs:
 
     - name: Create and push release manifests
       run: |
-        make create-release-composed-notconf-manifest YANG_PATH=${{ matrix.path }}
-        make push-release-composed-notconf-manifest YANG_PATH=${{ matrix.path }}
+        make create-release-yangmodels-manifests
+        make push-release-yangmodels-manifests

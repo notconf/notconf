@@ -52,7 +52,7 @@ export DOCKER_BUILDKIT=1
 # Dockerfile. We can use the "docker" image spec with Podman.
 export BUILDAH_FORMAT=docker
 
-.PHONY: clone-deps build test tag-release push-release push test tag-release-composed-notconf push-release-composed-notconf
+.PHONY: clone-deps build test tag-release push-release push pull test tag-release-composed-notconf push-release-composed-notconf
 
 clone-or-update: BRANCH?=devel
 clone-or-update: DIR:=$(basename $(lastword $(subst /, ,$(REPOSITORY))))
@@ -111,6 +111,10 @@ push:
 	$(CONTAINER_RUNTIME) push $(IMAGE_PATH)notconf:$(IMAGE_TAG)
 	$(CONTAINER_RUNTIME) push $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug
 
+pull:
+	$(CONTAINER_RUNTIME) pull $(IMAGE_PATH)notconf:$(IMAGE_TAG)
+	$(CONTAINER_RUNTIME) pull $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug
+
 create-manifest:
 	$(CONTAINER_RUNTIME) manifest create $(IMAGE_PATH)notconf:$(IMAGE_TAG) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-x86_64 $(IMAGE_PATH)notconf:$(IMAGE_TAG)-aarch64
 	$(CONTAINER_RUNTIME) manifest create $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug $(IMAGE_PATH)notconf:$(IMAGE_TAG)-x86_64-debug $(IMAGE_PATH)notconf:$(IMAGE_TAG)-aarch64-debug
@@ -144,6 +148,12 @@ create-release-composed-notconf-manifest:
 push-release-composed-notconf-manifest:
 	$(CONTAINER_RUNTIME) manifest push $(RELEASE_COMPOSED_MANIFEST_LIST_NAME) docker://$(RELEASE_COMPOSED_MANIFEST_LIST_NAME)
 
+create-release-yangmodels-manifests:
+	set -e; for path in $(YANG_PATHS); do $(MAKE) create-release-composed-notconf-manifest YANG_PATH=$${path}; done
+
+push-release-yangmodels-manifests:
+	set -e; for path in $(YANG_PATHS); do $(MAKE) push-release-composed-notconf-manifest YANG_PATH=$${path}; done
+
 tag-release-composed-notconf: composed-notconf.txt
 	for tag in $$(uniq $<); do release_tag=$$(echo $${tag} | sed 's/-$(IMAGE_TAG)$$/$(RELEASE_IMAGE_TAG)/'); $(CONTAINER_RUNTIME) tag $${tag} $${release_tag}; done
 
@@ -157,16 +167,35 @@ test:
 	$(MAKE) test-notconf-mount
 	$(MAKE) test-compose-yang YANG_PATH=test/yang-modules
 
+# Composed images built from yangmodels/yang, in CI and by test-yangmodels
+YANG_PATHS = \
+	yang/standard/ietf/RFC \
+	yang/vendor/nokia/7x50_YangModels/latest_sros_25.10 \
+	yang/vendor/nokia/7x50_YangModels/latest_sros_26.10 \
+	yang/vendor/juniper/21.1/21.1R1/junos \
+	yang/vendor/juniper/23.4/23.4R1/native/conf-and-rpcs/junos \
+	yang/vendor/cisco/xr/762 \
+	yang/vendor/cisco/xr/771 \
+	yang/vendor/cisco/xr/2411 \
+	yang/vendor/cisco/xr/2531 \
+	yang/vendor/cisco/nx/10.4-4
+
+# test-yangmodels: build and test the images for all YANG_PATHS. Run with -j to
+# build them in parallel. With GNU make 4+ each image's output is printed as one
+# block when the image is done; passing -O on the command line would instead
+# hold all output until the end.
+TEST_YANGMODELS = $(addprefix test-compose-yang/,$(YANG_PATHS))
+.PHONY: test-yangmodels $(TEST_YANGMODELS) build-perftest-image
 test-yangmodels:
 	> composed-notconf.txt
-	$(MAKE) test-compose-yang YANG_PATH=yang/vendor/nokia/7x50_YangModels/latest_sros_25.10
-	$(MAKE) test-compose-yang YANG_PATH=yang/vendor/nokia/7x50_YangModels/latest_sros_26.10
-	$(MAKE) test-compose-yang YANG_PATH=yang/vendor/juniper/21.1/21.1R1/junos
-	$(MAKE) test-compose-yang YANG_PATH=yang/vendor/juniper/23.4/23.4R1/native/conf-and-rpcs/junos
-	$(MAKE) test-compose-yang YANG_PATH=yang/vendor/cisco/xr/771
-	$(MAKE) test-compose-yang YANG_PATH=yang/vendor/cisco/xr/2411
-	$(MAKE) test-compose-yang YANG_PATH=yang/vendor/cisco/xr/2531
-	$(MAKE) test-compose-yang YANG_PATH=yang/vendor/cisco/nx/10.4-4
+	$(MAKE) $(if $(filter output-sync,$(.FEATURES)),--output-sync=recurse) $(TEST_YANGMODELS)
+
+# Fixup tests rebuild the perftest image; build it first so they only hit the cache
+$(TEST_YANGMODELS): test-compose-yang/%: build-perftest-image
+	$(MAKE) test-compose-yang YANG_PATH=$*
+
+build-perftest-image:
+	$(MAKE) -C perftest build-container-image
 
 # test-notconf-mount: start a notconf:latest container with the test YANG
 # modules mounted to /yang-modules in the container. All YANG modules and XML
@@ -336,7 +365,7 @@ else
 	exit 1
 endif
 
-.PHONY: clone-yangmodels compose-notconf-yang test-compose-yang test-composed-notconf-yang
+.PHONY: clone-yangmodels clone-yangmodels-sparse sparse-clone compose-notconf-yang test-compose-yang test-composed-notconf-yang
 
 # clone-yangmodels: clones and checks out the yangmodels/yang repository
 # including submodules
@@ -346,6 +375,33 @@ clone-yangmodels:
 	else \
 		cd yang; \
 		git pull && git submodule update --recursive --recommend-shallow; \
+	fi
+
+# clone-yangmodels-sparse: clones the yangmodels/yang repository with only
+# YANG_PATHS checked out, for CI. The juniper fixups also read the common
+# directory next to YANG_PATH.
+clone-yangmodels-sparse:
+	$(MAKE) sparse-clone REPOSITORY=https://github.com/yangmodels/yang.git DIR=yang \
+		SPARSE_DIRS="$(patsubst yang/%,%,$(YANG_PATHS) $(addsuffix common,$(dir $(filter yang/vendor/juniper/%,$(YANG_PATHS)))))"
+
+# sparse-clone: shallow, partial clone of REVISION of REPOSITORY into DIR with
+# only SPARSE_DIRS checked out. Submodules that contain any of SPARSE_DIRS are
+# cloned the same way.
+sparse-clone: REVISION?=HEAD
+sparse-clone:
+	git init -q $(DIR)
+	git -C $(DIR) config remote.origin.url $(REPOSITORY)
+	git -C $(DIR) fetch --depth 1 --filter=blob:none origin $(REVISION)
+	git -C $(DIR) sparse-checkout set $(SPARSE_DIRS)
+	git -C $(DIR) checkout -q --detach FETCH_HEAD
+	if [ -f $(DIR)/.gitmodules ]; then \
+		git -C $(DIR) config -f .gitmodules --get-regexp '\.path$$' | while read -r key path; do \
+			dirs=; for dir in $(SPARSE_DIRS); do case $$dir in $$path/*) dirs="$$dirs $${dir#$$path/}";; esac; done; \
+			if [ -z "$$dirs" ]; then continue; fi; \
+			name=$${key#submodule.}; name=$${name%.path}; \
+			$(MAKE) sparse-clone DIR=$(DIR)/$$path REPOSITORY=$$(git -C $(DIR) config -f .gitmodules submodule.$$name.url) \
+				REVISION=$$(git -C $(DIR) rev-parse HEAD:$$path) SPARSE_DIRS="$$dirs" || exit; \
+		done; \
 	fi
 
 # Set up COMPOSE_IMAGE_* variables by examining the provided YANG_PATH variable.
@@ -396,7 +452,7 @@ compose-notconf-yang:
 		echo "Checking if $(YANG_PATH) matches $${fixup}"; \
 		if [[ "$(YANG_PATH)" =~ ^$$(dirname $${fixup}).* ]]; then \
 			echo "Executing fixups/$${fixup}"; \
-			make -f fixups/$$fixup -j YANG_PATH=$(YANG_PATH) COMPOSE_PATH=$(COMPOSE_PATH); \
+			$(MAKE) -f fixups/$$fixup YANG_PATH=$(YANG_PATH) COMPOSE_PATH=$(COMPOSE_PATH); \
 		fi \
 	done
 	if ! ls $(COMPOSE_PATH)/*.yang > /dev/null 2>&1; then \
@@ -419,9 +475,9 @@ test-composed-notconf-yang:
 	$(CONTAINER_RUNTIME) run -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug netconf-console2 --port 830 --hello
 	$(CONTAINER_RUNTIME) run -i --rm --network container:$(CNT_PREFIX) $(IMAGE_PATH)notconf:$(IMAGE_TAG)-debug netconf-console2 --port 830 --get -x /modules-state
 	set -e; for fixup in `find fixups -type f -name Makefile | sed 's#^fixups/##' | awk -F/ '{ print NF "\t" $$0; }' | sort -nr | cut -f2-`; do \
-		if [[ "$(YANG_PATH)" =~ ^$$(dirname $${fixup}).* ]] && make -C $$(dirname "fixups/$${fixup}") -n test >/dev/null 2>&1; then \
+		if [[ "$(YANG_PATH)" =~ ^$$(dirname $${fixup}).* ]] && $(MAKE) -C $$(dirname "fixups/$${fixup}") -n test >/dev/null 2>&1; then \
 			echo "Executing test in fixups/$${fixup}"; \
-			make -C $$(dirname "fixups/$${fixup}") test; \
+			$(MAKE) -C $$(dirname "fixups/$${fixup}") test; \
 		fi \
 	done
 	$(MAKE) save-logs
